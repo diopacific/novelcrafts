@@ -1,0 +1,6 @@
+{
+  "name": "NovelCraft AI",
+  "description": "A RAG-based AI web novel writing system that guarantees story and character consistency.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
