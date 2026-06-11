@@ -53,31 +53,46 @@ ${pastSummary || '아직 작성된 회차가 없습니다. (본격적인 이야�
     }
   });
 
-  // 장면 플롯 기획 API
+  // 장면 플롯 및 감정선 기획 API (Stage 1, 2, 3)
   app.post("/api/plan-scenes", async (req, res) => {
     try {
       const { bible, pastSummary, episodeNumber, userDirection } = req.body;
       const prompt = `
-[작품 설정]
+[작품 설정 체계 - Priority 1]
 - 메인 스토리: ${bible.story}
 - 세계관: ${bible.world}
 - 캐릭터: ${bible.character}
 - 빌런/적대 세력: ${bible.villain}
 
-[최근 회차 흐름]
+[최근 회차 흐름 (Memory)]
 ${pastSummary || '아직 작성된 회차가 없습니다.'}
 
-[제 ${episodeNumber}화 전체 방향성 지시]
+[이번 화 전체 방향성 (User Direction)]
 ${userDirection}
 
-위 정보를 바탕으로, 총 5000자 분량(웹소설 1화)을 확보할 수 있도록 제 ${episodeNumber}화를 4개의 세부 장면(1.발단, 2.전개, 3.위기, 4.절정/결말)으로 분할하여 기획해주세요.`.trim();
+당신은 AI 파이프라인의 [Stage 1: Episode Generator], [Stage 2: Scene Planner], [Stage 3: Emotion Planner] 모듈입니다.
+위 정보를 바탕으로 총 5000자 분량(웹소설 1화)을 확보할 수 있도록 제 ${episodeNumber}화를 4개의 세부 장면으로 분할 기획해주세요.
+
+1. 이번 화 전체의 에피소드 발생 목표/갈등을 한 줄로 정의하세요.
+2. 4개의 각 Scene에는 Goal(목표), Conflict(갈등), Location(장소), Characters(등장인물), Ending Hook(엔딩 훅)을 모두 포함하여 상세히 기술하세요.
+3. 각 Scene의 감정선 변화(Emotion Curve)를 작성하세요. (예: 기대 -> 의문 -> 경악)
+
+반드시 아래 JSON 형식으로만 반환하세요:
+{
+  "episodeGoal": "이번 화의 핵심 목표 및 요약",
+  "scenes": [
+    { "title": "장면 1 (발단)", "plot": "Goal: ... Conflict: ... Location: ... Characters: ... Ending Hook: ...", "emotion": "감정 흐름" },
+    ...
+  ]
+}
+`.trim();
 
       const response = await ai.models.generateContent({
         model: "gemini-2.5-pro",
         contents: prompt,
         config: { 
           temperature: 0.8,
-          systemInstruction: "당신은 천재적인 웹소설 기획자입니다. 사용자의 지시사항을 바탕으로 4개 장면 플롯을 구성하세요. 각 장면은 자연스러운 전개와 텐션을 가져야 합니다. 반드시 JSON 형식 { \"scenes\": [ { \"title\": \"장면 1 (발단)\", \"plot\": \"세부 내용\" }, ... ] } 으로만 반환하세요.",
+          systemInstruction: "당신은 6-Stage 파이프라인의 수석 기획자입니다. JSON 형식으로만 응답하세요.",
           responseMimeType: "application/json"
         },
       });
@@ -96,11 +111,10 @@ ${userDirection}
     }
   });
 
-  // 개별 장면 집필 API
+  // 개별 장면 집필 및 검증 API (Stage 4, 5)
   app.post("/api/write-scene", async (req, res) => {
     try {
-      // 불필요하게 많은 바이블 필드를 보내지 않고, 작성에 직결된 필드만 추출하여 토큰을 절약합니다.
-      const { bible, pastSummary, episodeNumber, sceneTitle, scenePlot, previousScenesContent } = req.body;
+      const { bible, pastSummary, sceneTitle, scenePlot, sceneEmotion, previousScenesContent } = req.body;
       const prompt = `
 [작품 설정 체계 - Priority 1]
 ${bible.world} / ${bible.system} / ${bible.character}
@@ -111,18 +125,29 @@ ${pastSummary || '이번 화가 첫 시작입니다.'}
 [이번 화 현재까지 집필된 부분]
 ${previousScenesContent || '(이번 화의 첫 장면입니다)'}
 
-[타겟 집필 장면]
+[타겟 집필 장면 기획안]
 - 장면 명칭: ${sceneTitle}
 - 장면 플롯: ${scenePlot}
+- 감정선 흐름: ${sceneEmotion}
 
-이 타겟 장면의 **본문 원고만** 집필하세요. 이전 내용과 이어지되, 지시된 플롯 범위 내에서만 서술해야 합니다.`.trim();
+당신은 [Stage 4: Scene Writer]이자 [Stage 5: Scene Validator]입니다.
+이 타겟 장면의 **본문 원고만** 집필하세요. 이전 내용과 이어지되, 지시된 플롯 범위 내에서만 서술해야 합니다.
+본문을 작성한 후, 스스로 설정 충돌, 감정선 유지 여부를 검증하고 점수(100점 만점)와 피드백을 추가하세요.
+
+반드시 아래 JSON 형식으로만 반환하세요:
+{
+  "content": "작성된 본문 (모바일 가독성을 위해 2~3문장마다 줄바꿈, 1200~1500자 분량, 대사와 행동 중심)",
+  "validationScore": 95,
+  "validationFeedback": "감정선이 훌륭하게 유지되었습니다."
+}
+`.trim();
 
       const response = await ai.models.generateContent({
         model: "gemini-2.5-pro",
         contents: prompt,
         config: { 
           temperature: 0.7,
-          systemInstruction: "당신은 매력적인 필력을 가진 탑급 웹소설 작가입니다. 주어진 플롯만을 약 1200~1500자 분량으로 생생하게 묘사하세요. 모바일 환경에 맞춰 시원한 엔터(줄바꿈), 대화와 상황 묘사의 황금 비율(5:5)을 유지하세요. 절대 JSON 구조 외에 다른 말을 덧붙이지 마세요. 반드시 { \"content\": \"생성된 원고 텍스트\" } 형식의 JSON으로만 반환하세요.",
+          systemInstruction: "당신은 매력적인 필력을 가진 Scene Writer 및 엄격한 Validator입니다. 오직 JSON 형식으로만 반환하세요.",
           responseMimeType: "application/json"
         },
       });
@@ -141,24 +166,35 @@ ${previousScenesContent || '(이번 화의 첫 장면입니다)'}
     }
   });
 
-  // 회차 요약 API
-  app.post("/api/summarize-episode", async (req, res) => {
+  // 에피소드 컴포징 API (Stage 6)
+  app.post("/api/compose-episode", async (req, res) => {
     try {
       const { episodeNumber, fullContent } = req.body;
       const prompt = `
-방금 작성된 제 ${episodeNumber}화 전체 본문입니다.
+당신은 [Stage 6: Episode Composer] 모듈입니다.
+아래는 Stage 4, 5를 통과한 4개의 Scene 단위 초안입니다.
 
-[본문]
+[제 ${episodeNumber}화 Scene 초안들]
 ${fullContent}
 
-다음 화 집필 시 '최근 회차 흐름'으로 활용될 수 있도록, 가장 중요한 사건이나 인물의 행보 উই주로 3~4줄로 명확히 요약해주세요.`.trim();
+[지시사항]
+1. 각 Scene 사이의 끊어지는 느낌을 없애고 호흡이 부드러운 하나의 회차(최소 5000자 보장)로 매끄럽게 연결 및 보완하세요.
+2. 중복 표현 제거, 문체 통일, 감정선 연결, 엔딩 훅 강화를 수행하세요.
+3. 최종 완성된 본문(finalContent)과, RAG Memory 업데이트에 사용할 핵심 사건 위주의 3~4줄 요약(summary)을 작성하세요.
+
+반드시 아래 JSON 형식으로만 반환하세요:
+{
+  "finalContent": "자연스럽게 병합/보완된 최종 원고",
+  "summary": "다음 화 컨텍스트를 위한 핵심 요약"
+}
+`.trim();
 
       const response = await ai.models.generateContent({
-        model: "gemini-2.5-flash",
+        model: "gemini-2.5-pro", // Composer Needs high context & reasoning
         contents: prompt,
         config: { 
-          temperature: 0.3,
-          systemInstruction: "당신은 날카로운 통찰력을 가진 웹소설 편집자입니다. 회차의 핵심 줄거리만 추출하여 요약하세요. 반드시 JSON 형식 { \"summary\": \"요약 텍스트\" } 으로만 반환하세요.",
+          temperature: 0.4,
+          systemInstruction: "당신은 날카로운 통찰력을 가진 수석 편집자이자 Episode Composer입니다. Scene 초안들을 하나의 완벽한 회차 본문으로 병합하고, 다음 화를 위한 기억(Summary)을 작성합니다. 오직 JSON으로 응답하세요.",
           responseMimeType: "application/json"
         },
       });
@@ -171,9 +207,9 @@ ${fullContent}
       }
       res.json(parsed);
     } catch (error: any) {
-      console.error("API Summarize Episode Error:", error);
+      console.error("API Compose Episode Error:", error);
       const code = typeof error.status === 'number' ? error.status : (error.code || 500);
-      res.status(typeof code === 'number' ? code : 500).json({ error: error.message || "Failed to summarize episode" });
+      res.status(typeof code === 'number' ? code : 500).json({ error: error.message || "Failed to compose episode" });
     }
   });
 
