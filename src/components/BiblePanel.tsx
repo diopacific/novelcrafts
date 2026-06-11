@@ -33,7 +33,7 @@ export function BiblePanel({ bible, setBible }: BiblePanelProps) {
       {/* Left Sidebar for Tabs */}
       <div className="w-80 bg-slate-50 border-r border-slate-200 flex flex-col shrink-0">
         <div className="p-8 pb-6 text-left">
-          <h1 className="text-xl font-bold text-slate-800 tracking-tight">작품 바이블 편집소</h1>
+          <h1 className="text-xl font-bold text-slate-800 tracking-tight">설정 공장</h1>
           <p className="text-[13px] text-slate-500 mt-2 font-medium leading-relaxed">
             총 6개의 파생 설정집을 작성하여 저장합니다.<br/>
             이 설정은 AI가 소설을 생성할 때 가장 높은 <br/>우선순위(Priority 1)로 개입합니다.

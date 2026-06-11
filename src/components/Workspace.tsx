@@ -42,9 +42,12 @@ export function Workspace({ bible, episodes, setEpisodes }: WorkspaceProps) {
 
   const getPastSummary = () => {
     if (episodes.length === 0) return '';
-    // 컨텍스트 길이 최적화를 위해 최근 10개의 요약만 전달 (가짜 RAG/슬라이딩 윈도우 원리)
-    const recentEpisodes = episodes.slice(-10);
-    return recentEpisodes.map(ep => `[${ep.number}화] ${ep.summary}`).join('\n');
+    // 토큰 관리를 위해 최근 5개의 핵심 요약만 슬라이딩 윈도우 방식으로 제공 + 최근 회차 강조
+    const recentEpisodes = episodes.slice(-5);
+    return recentEpisodes.map((ep, index) => {
+      const isLast = index === recentEpisodes.length - 1;
+      return `[제 ${ep.number}화] ${ep.summary} ${isLast ? '(가장 최근 상황)' : ''}`;
+    }).join('\n');
   };
 
   const handleGetSuggestions = async () => {
@@ -212,7 +215,7 @@ export function Workspace({ bible, episodes, setEpisodes }: WorkspaceProps) {
       {/* Header */}
       <header className="h-[72px] shrink-0 bg-white border-b border-slate-200 px-8 flex items-center justify-between shadow-sm z-10 sticky top-0">
         <div className="flex flex-col">
-          <h1 className="text-xl font-bold tracking-tight text-slate-800">연재 워크스페이스</h1>
+          <h1 className="text-xl font-bold tracking-tight text-slate-800">집필 공장</h1>
         </div>
         <div className="flex items-center gap-3">
           <span className="text-sm font-medium text-slate-500 bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200 shadow-inner">

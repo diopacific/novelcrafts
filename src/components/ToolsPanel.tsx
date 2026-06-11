@@ -80,7 +80,7 @@ export function ToolsPanel({ bible, episodes, setBible, setEpisodes }: ToolsPane
   return (
     <div className="flex-1 flex flex-col h-full bg-[#f8fafc] overflow-y-auto w-full custom-scrollbar">
       <header className="h-[72px] shrink-0 bg-white border-b border-slate-200 px-8 flex items-center shadow-sm z-10 sticky top-0">
-        <h1 className="text-xl font-bold tracking-tight text-slate-800">기타 도구 및 설정</h1>
+        <h1 className="text-xl font-bold tracking-tight text-slate-800">기타</h1>
       </header>
 
       <div className="p-8 max-w-4xl mx-auto w-full space-y-8">

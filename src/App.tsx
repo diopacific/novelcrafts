@@ -4,6 +4,7 @@ import { BibleState, Episode } from './types';
 import { BiblePanel } from './components/BiblePanel';
 import { Workspace } from './components/Workspace';
 import { ToolsPanel } from './components/ToolsPanel';
+import { Home } from './components/Home';
 import { Book, PenTool, Settings } from 'lucide-react';
 
 export default function App() {
@@ -17,42 +18,46 @@ export default function App() {
   });
 
   const [episodes, setEpisodes] = useLocalStorage<Episode[]>('novel-episodes', []);
-  const [currentSection, setCurrentSection] = useState<'bible' | 'workspace' | 'tools'>('bible');
+  const [currentSection, setCurrentSection] = useState<'home' | 'bible' | 'workspace' | 'tools'>('home');
 
   return (
     <div className="flex flex-col h-screen w-full bg-slate-50 text-slate-900 font-sans font-medium overflow-hidden antialiased">
       
       {/* Global Top Navigation */}
       <nav className="h-14 bg-slate-900 border-b border-slate-800 flex items-center px-6 gap-6 z-50 shrink-0">
-        <div className="flex items-center justify-center font-black text-xl text-white tracking-tighter mr-2 shadow-[0_0_15px_rgba(255,255,255,0.1)]">
-          N.
-        </div>
+        <button 
+          onClick={() => setCurrentSection('home')} 
+          className="flex items-center text-white font-black text-xl tracking-tight mr-4 hover:text-indigo-400 transition-colors"
+        >
+          소설공장 스튜디오
+        </button>
         
         <div className="flex items-center gap-1.5 h-full">
           <NavButton 
             active={currentSection === 'bible'} 
             onClick={() => setCurrentSection('bible')} 
             icon={<Book className="w-4 h-4 mr-2" />} 
-            label="설정 바이블" 
+            label="설정 공장" 
           />
           <NavButton 
             active={currentSection === 'workspace'} 
             onClick={() => setCurrentSection('workspace')} 
             icon={<PenTool className="w-4 h-4 mr-2" />} 
-            label="집필 워크스페이스" 
+            label="집필 공장" 
           />
           <div className="w-px h-5 bg-slate-800 mx-2"></div>
           <NavButton 
             active={currentSection === 'tools'} 
             onClick={() => setCurrentSection('tools')} 
             icon={<Settings className="w-4 h-4 mr-2" />} 
-            label="도구 및 백업" 
+            label="기타" 
           />
         </div>
       </nav>
 
       {/* Main View Area */}
       <main className="flex-1 flex overflow-hidden">
+        {currentSection === 'home' && <Home onNavigate={setCurrentSection} />}
         {currentSection === 'bible' && <BiblePanel bible={bible} setBible={setBible} />}
         {currentSection === 'workspace' && <Workspace bible={bible} episodes={episodes} setEpisodes={setEpisodes} />}
         {currentSection === 'tools' && (
