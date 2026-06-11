@@ -16,7 +16,7 @@ export function Home({ onNavigate }: { onNavigate: (section: 'bible' | 'workspac
            </div>
            <h1 className="text-4xl sm:text-5xl font-black text-slate-800 tracking-tight pt-2">소설공장 스튜디오</h1>
            <p className="text-lg text-slate-500 max-w-2xl mx-auto font-medium leading-relaxed mt-4">
-             단편적인 아이디어를 체계적인 설정집으로 구축하고, 4장면 플롯 분할 기법을 통해 5,000자 분량의 튼튼한 에피소드를 무한히 찍어내는 자동화 스튜디오입니다.
+             6단계 파이프라인(에피소드·장면·감정선 기획부터 집필, 검증, 병합) 아키텍처를 기반으로, 설정 붕괴 없는 5,000자 분량의 고품질 장편 웹소설을 밀도 있고 안정적으로 자동 생산하는 AI 스튜디오입니다.
            </p>
         </div>
 
@@ -29,7 +29,7 @@ export function Home({ onNavigate }: { onNavigate: (section: 'bible' | 'workspac
               <Book className="w-7 h-7" />
             </div>
             <h3 className="text-xl font-bold text-slate-800 mb-2">설정 공장</h3>
-            <p className="text-[14px] text-slate-500 leading-relaxed font-medium">장기 연재를 위한 뼈대 구축 단계입니다. 세계관, 캐릭터 등 6가지의 최우선 설정 바이블을 작성합니다.</p>
+            <p className="text-[14px] text-slate-500 leading-relaxed font-medium">장편 연재를 지탱하는 뼈대 구축 단계입니다. 세계관, 캐릭터 등 6가지 최우선(Priority 1) 설정 바이블을 작성합니다.</p>
           </button>
 
           <button 
@@ -40,7 +40,7 @@ export function Home({ onNavigate }: { onNavigate: (section: 'bible' | 'workspac
               <PenTool className="w-7 h-7" />
             </div>
             <h3 className="text-xl font-bold text-slate-800 mb-2">집필 공장</h3>
-            <p className="text-[14px] text-slate-500 leading-relaxed font-medium">설정집과 문맥을 기반으로 한 4단계 플롯 분할 시스템. 파트별로 꼼꼼히 장면을 생성하여 회차를 완성합니다.</p>
+            <p className="text-[14px] text-slate-500 leading-relaxed font-medium">에피소드·감정선 기획, 장면 단위 집필 및 품질 검증, 그리고 매끄러운 단락 병합까지 이어지는 6-Stage 엔진을 가동합니다.</p>
           </button>
 
           <button 
@@ -51,7 +51,7 @@ export function Home({ onNavigate }: { onNavigate: (section: 'bible' | 'workspac
               <Settings className="w-7 h-7" />
             </div>
             <h3 className="text-xl font-bold text-slate-800 mb-2">기타</h3>
-            <p className="text-[14px] text-slate-500 leading-relaxed font-medium">단어 수 등의 작업물 통계와 데이터를 확인하고 로컬 백업 및 복구를 안전하게 진행합니다.</p>
+            <p className="text-[14px] text-slate-500 leading-relaxed font-medium">데이터 로컬 백업 관리, 그리고 회차별 작업물 및 단어 수 등 통계 정보를 확인하는 유틸리티 공간입니다.</p>
           </button>
         </div>
       </div>

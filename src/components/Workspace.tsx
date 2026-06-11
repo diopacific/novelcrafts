@@ -103,10 +103,14 @@ export function Workspace({ bible, episodes, setEpisodes }: WorkspaceProps) {
         id: `draft-${idx}`,
         title: s.title,
         plot: s.plot,
+        emotion: s.emotion || '',
         content: '',
         status: 'idle'
       }));
       setDraftScenes(mappedScenes);
+      if (data.episodeGoal) {
+        setEpisodeGoal(data.episodeGoal);
+      }
     } catch (e) {
       console.error(e);
       alert('플롯 기획 중 오류가 발생했습니다.');
@@ -139,13 +143,20 @@ export function Workspace({ bible, episodes, setEpisodes }: WorkspaceProps) {
           episodeNumber: nextEpisodeNum,
           sceneTitle: targetScene.title,
           scenePlot: targetScene.plot,
+          sceneEmotion: targetScene.emotion,
           previousScenesContent
         })
       });
       if (!res.ok) throw new Error('API 오류');
       const data = await res.json();
       
-      setDraftScenes(prev => prev!.map(s => s.id === sceneId ? { ...s, content: data.content, status: 'done' } : s));
+      setDraftScenes(prev => prev!.map(s => s.id === sceneId ? { 
+        ...s, 
+        content: data.content, 
+        status: 'done',
+        validationScore: data.validationScore,
+        validationFeedback: data.validationFeedback 
+      } : s));
     } catch (e) {
       console.error(e);
       alert('장면 집필 중 오류가 발생했습니다.');
@@ -153,41 +164,45 @@ export function Workspace({ bible, episodes, setEpisodes }: WorkspaceProps) {
     }
   };
 
-  const handleFinalizeEpisode = async () => {
+  const handleComposeEpisode = async () => {
     if (!draftScenes) return;
     
-    const fullContent = draftScenes.map(s => s.content).join('\n\n* * *\n\n');
+    // Convert drafts to string format for Composer
+    const draftsPayload = draftScenes.map(s => 
+      `--- [${s.title}] ---\n<플롯>\n${s.plot}\n\n<감정선>\n${s.emotion}\n\n<본문 초안>\n${s.content}`
+    ).join('\n\n');
     
-    setSummarizing(true);
+    setComposing(true);
     try {
-      const res = await fetch('/api/summarize-episode', {
+      const res = await fetch('/api/compose-episode', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           episodeNumber: nextEpisodeNum,
-          fullContent
+          fullContent: draftsPayload
         })
       });
-      if (!res.ok) throw new Error('API 요약본 생성 오류');
+      if (!res.ok) throw new Error('API 컴포징 오류');
       const data = await res.json();
       
       const newEpisode: Episode = {
         id: `ep-${Date.now()}`,
         number: nextEpisodeNum,
         direction: userDirection,
-        content: fullContent,
-        summary: data.summary
+        content: data.finalContent || '본문 생성에 실패했습니다.',
+        summary: data.summary || '요약 생성에 실패했습니다.'
       };
 
       setEpisodes(prev => [...prev, newEpisode]);
       setUserDirection('');
       setSuggestions([]);
       setDraftScenes(null);
+      setEpisodeGoal('');
     } catch (e) {
       console.error(e);
       alert('에피소드 완성 중 오류가 발생했습니다.');
     } finally {
-      setSummarizing(false);
+      setComposing(false);
     }
   };
 
