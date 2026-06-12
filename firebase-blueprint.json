@@ -1,0 +1,45 @@
+{
+  "entities": {
+    "BibleState": {
+      "title": "Bible State",
+      "description": "The master settings for the novel",
+      "type": "object",
+      "properties": {
+        "story": { "type": "string" },
+        "world": { "type": "string" },
+        "system": { "type": "string" },
+        "character": { "type": "string" },
+        "villain": { "type": "string" },
+        "structure": { "type": "string" },
+        "ownerId": { "type": "string" },
+        "updatedAt": { "type": "number" }
+      },
+      "required": ["story", "world", "system", "character", "villain", "structure", "ownerId", "updatedAt"]
+    },
+    "Episode": {
+      "title": "Episode",
+      "description": "An episode of the novel",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "number": { "type": "number" },
+        "direction": { "type": "string" },
+        "content": { "type": "string" },
+        "summary": { "type": "string" },
+        "ownerId": { "type": "string" },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["id", "number", "direction", "content", "summary", "ownerId", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}/bible/{bibleId}": {
+      "schema": { "$ref": "#/entities/BibleState" },
+      "description": "User's novel bible settings"
+    },
+    "/users/{userId}/episodes/{episodeId}": {
+      "schema": { "$ref": "#/entities/Episode" },
+      "description": "User's novel episodes"
+    }
+  }
+}

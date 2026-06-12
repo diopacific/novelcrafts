@@ -267,7 +267,7 @@ export function Workspace({ bible, episodes, setEpisodes }: WorkspaceProps) {
                     {editingId !== ep.id && (
                       <div className="flex items-center gap-1.5 text-slate-500 text-sm">
                         <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                        <span className="font-medium text-emerald-600">저장됨</span>
+                        <span className="font-medium text-emerald-600">클라우드 저장됨</span>
                       </div>
                     )}
                   </div>
