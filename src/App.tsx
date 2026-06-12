@@ -8,10 +8,13 @@ import { Book, PenTool, Settings, LogIn, LogOut } from 'lucide-react';
 import { AuthProvider, useAuth } from './AuthContext';
 import { useDbStorage } from './hooks/useDbStorage';
 
+import { KeySettingsModal } from './components/KeySettingsModal';
+
 function AppContent() {
   const { user, login, logoutUser } = useAuth();
   const { bible, setBible, episodes, setEpisodes, loading } = useDbStorage();
   const [currentSection, setCurrentSection] = useState<'home' | 'bible' | 'workspace' | 'tools'>('home');
+  const [isKeyModalOpen, setIsKeyModalOpen] = useState(false);
 
   const requireAuth = async (section: 'home' | 'bible' | 'workspace' | 'tools') => {
     if (!user && section !== 'home') {
@@ -71,7 +74,14 @@ function AppContent() {
           </div>
         </div>
 
-        <div className="flex items-center">
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => setIsKeyModalOpen(true)}
+            className="flex items-center text-slate-300 hover:text-white transition-colors text-sm font-bold"
+          >
+            <Settings className="w-4 h-4 mr-1.5" /> API Key
+          </button>
+          
           {user ? (
             <div className="flex items-center gap-4">
                <span className="text-slate-400 text-sm hidden sm:inline-block">{user.email}</span>
@@ -124,6 +134,8 @@ function AppContent() {
           </>
         )}
       </main>
+      
+      <KeySettingsModal isOpen={isKeyModalOpen} onClose={() => setIsKeyModalOpen(false)} />
     </div>
   );
 }

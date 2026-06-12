@@ -1,9 +1,62 @@
 import express from "express";
 import path from "path";
+import fs from "fs";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI } from "@google/genai";
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+
+// === Firebase Auth & Credit System ===
+const firebaseConfigPath = path.join(process.cwd(), 'firebase-applet-config.json');
+let FIREBASE_API_KEY = "";
+try {
+  if (fs.existsSync(firebaseConfigPath)) {
+    FIREBASE_API_KEY = JSON.parse(fs.readFileSync(firebaseConfigPath, 'utf-8')).apiKey;
+  }
+} catch (e) {}
+
+let creditsCache: Record<string, { count: number, lastReset: string }> = {};
+const CREDITS_FILE = path.join(process.cwd(), 'user-credits.json');
+
+function loadCredits() {
+  try {
+     if (fs.existsSync(CREDITS_FILE)) {
+        creditsCache = JSON.parse(fs.readFileSync(CREDITS_FILE, 'utf-8'));
+     }
+  } catch(e) {}
+}
+
+function saveCredits() {
+  try {
+     fs.writeFileSync(CREDITS_FILE, JSON.stringify(creditsCache));
+  } catch(e) {}
+}
+
+loadCredits();
+
+const DAILY_LIMIT = 5; // Allow 5 generations per day per user
+
+function checkAndDeductCredit(email: string) {
+  if (email === "diopacific@gmail.com") return { allowed: true, remaining: "무제한" };
+  
+  const today = new Date().toISOString().split('T')[0];
+  
+  let userCred = creditsCache[email];
+  if (!userCred || userCred.lastReset !== today) {
+     userCred = { count: DAILY_LIMIT, lastReset: today };
+  }
+  
+  if (userCred.count <= 0) {
+     return { allowed: false, remaining: 0 };
+  }
+  
+  userCred.count -= 1;
+  creditsCache[email] = userCred;
+  saveCredits();
+  
+  return { allowed: true, remaining: userCred.count };
+}
+// ===================================
 
 async function startServer() {
   const app = express();
@@ -11,9 +64,49 @@ async function startServer() {
 
   app.use(express.json({ limit: "50mb" }));
 
+  // Auth Middleware
+  app.use(async (req, res, next) => {
+    if (!req.path.startsWith("/api/")) return next();
+    
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({ error: "인증이 필요합니다. 로그인 후 다시 시도해주세요." });
+    }
+    
+    const token = authHeader.split(" ")[1];
+    try {
+      const response = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${FIREBASE_API_KEY}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ idToken: token })
+      });
+      const data = await response.json();
+      if (data.error) {
+         return res.status(401).json({ error: "유효하지 않은 토큰입니다." });
+      }
+      (req as any).user = data.users[0];
+      next();
+    } catch (e) {
+      return res.status(401).json({ error: "인증 중 서버 오류가 발생했습니다." });
+    }
+  });
+
   // AI 제안 API (방향성 제시)
   app.post("/api/suggest", async (req, res) => {
     try {
+      const user = (req as any).user;
+      const customKey = req.headers['x-gemini-key'] as string | undefined;
+      
+      let client = ai;
+      if (customKey) {
+        client = new GoogleGenAI({ apiKey: customKey });
+      } else {
+        const credit = checkAndDeductCredit(user.email);
+        if (!credit.allowed) {
+          return res.status(429).json({ error: "일일 크레딧(5회)이 모두 소진되었습니다. 우측 상단 '기타' 메뉴에서 개인 API 키를 등록하면 무제한으로 이용할 수 있습니다." });
+        }
+      }
+
       const { bible, pastSummary, episodeNumber } = req.body;
       const prompt = `
 [작품 설정]
@@ -29,8 +122,8 @@ ${pastSummary || '아직 작성된 회차가 없습니다. (본격적인 이야�
 
 위 작품 설정과 최근 흐름을 바탕으로, 제 ${episodeNumber}화에서 전개할 수 있는 흥미로운 "플롯 전개 방향" 3가지를 구체적인 사건 위주로 제안해주세요.`.trim();
 
-      const response = await ai.models.generateContent({
-        model: "gemini-2.0-flash",
+      const response = await client.models.generateContent({
+        model: "gemini-3.5-flash",
         contents: prompt,
         config: { 
           temperature: 0.8,
@@ -56,6 +149,19 @@ ${pastSummary || '아직 작성된 회차가 없습니다. (본격적인 이야�
   // 장면 플롯 및 감정선 기획 API (Stage 1, 2, 3)
   app.post("/api/plan-scenes", async (req, res) => {
     try {
+      const user = (req as any).user;
+      const customKey = req.headers['x-gemini-key'] as string | undefined;
+      
+      let client = ai;
+      if (customKey) {
+        client = new GoogleGenAI({ apiKey: customKey });
+      } else {
+        const credit = checkAndDeductCredit(user.email);
+        if (!credit.allowed) {
+          return res.status(429).json({ error: "일일 크레딧(5회)이 모두 소진되었습니다. 우측 상단 '기타' 메뉴에서 개인 API 키를 등록하면 무제한으로 이용할 수 있습니다." });
+        }
+      }
+
       const { bible, pastSummary, episodeNumber, userDirection } = req.body;
       const prompt = `
 [작품 설정 체계 - Priority 1]
@@ -87,8 +193,8 @@ ${userDirection}
 }
 `.trim();
 
-      const response = await ai.models.generateContent({
-        model: "gemini-2.0-flash",
+      const response = await client.models.generateContent({
+        model: "gemini-3.5-flash",
         contents: prompt,
         config: { 
           temperature: 0.8,
@@ -114,6 +220,19 @@ ${userDirection}
   // 개별 장면 집필 및 검증 API (Stage 4, 5)
   app.post("/api/write-scene", async (req, res) => {
     try {
+      const user = (req as any).user;
+      const customKey = req.headers['x-gemini-key'] as string | undefined;
+      
+      let client = ai;
+      if (customKey) {
+        client = new GoogleGenAI({ apiKey: customKey });
+      } else {
+        const credit = checkAndDeductCredit(user.email);
+        if (!credit.allowed) {
+          return res.status(429).json({ error: "일일 크레딧(5회)이 모두 소진되었습니다. 우측 상단 '기타' 메뉴에서 개인 API 키를 등록하면 무제한으로 이용할 수 있습니다." });
+        }
+      }
+
       const { bible, pastSummary, sceneTitle, scenePlot, sceneEmotion, previousScenesContent } = req.body;
       const prompt = `
 [작품 설정 체계 - Priority 1]
@@ -142,8 +261,8 @@ ${previousScenesContent || '(이번 화의 첫 장면입니다)'}
 }
 `.trim();
 
-      const response = await ai.models.generateContent({
-        model: "gemini-2.0-flash",
+      const response = await client.models.generateContent({
+        model: "gemini-3.5-flash",
         contents: prompt,
         config: { 
           temperature: 0.7,
@@ -169,6 +288,19 @@ ${previousScenesContent || '(이번 화의 첫 장면입니다)'}
   // 에피소드 컴포징 API (Stage 6)
   app.post("/api/compose-episode", async (req, res) => {
     try {
+      const user = (req as any).user;
+      const customKey = req.headers['x-gemini-key'] as string | undefined;
+      
+      let client = ai;
+      if (customKey) {
+        client = new GoogleGenAI({ apiKey: customKey });
+      } else {
+        const credit = checkAndDeductCredit(user.email);
+        if (!credit.allowed) {
+          return res.status(429).json({ error: "일일 크레딧(5회)이 모두 소진되었습니다. 우측 상단 '기타' 메뉴에서 개인 API 키를 등록하면 무제한으로 이용할 수 있습니다." });
+        }
+      }
+
       const { episodeNumber, fullContent } = req.body;
       const prompt = `
 당신은 [Stage 6: Episode Composer] 모듈입니다.
@@ -189,8 +321,8 @@ ${fullContent}
 }
 `.trim();
 
-      const response = await ai.models.generateContent({
-        model: "gemini-2.0-flash", // Composer Needs high context & reasoning
+      const response = await client.models.generateContent({
+        model: "gemini-3.1-pro-preview", // Composer Needs high context & reasoning
         contents: prompt,
         config: { 
           temperature: 0.4,
