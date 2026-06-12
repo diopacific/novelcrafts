@@ -63,13 +63,9 @@ export function useDbStorage() {
           eps.push({
             id: data.id,
             number: data.number,
-            direction: data.direction,
-            content: data.content,
-            summary: data.summary,
-            // @ts-ignore
-            validationScore: data.validationScore,
-            // @ts-ignore
-            validationFeedback: data.validationFeedback,
+            direction: data.direction || '',
+            content: data.content || '',
+            summary: data.summary || '',
           });
         });
         eps.sort((a, b) => a.number - b.number);
@@ -103,10 +99,15 @@ export function useDbStorage() {
       const bibleRef = doc(db, 'users', user.uid, 'bible', 'main');
       try {
         await setDoc(bibleRef, {
-          ...resolvedState,
+          story: resolvedState.story || '',
+          world: resolvedState.world || '',
+          system: resolvedState.system || '',
+          character: resolvedState.character || '',
+          villain: resolvedState.villain || '',
+          structure: resolvedState.structure || '',
           ownerId: user.uid,
           updatedAt: serverTimestamp()
-        }, { merge: true });
+        });
       } catch (error) {
         handleFirestoreError(error, OperationType.WRITE, `users/${user.uid}/bible/main`);
       }
@@ -117,16 +118,23 @@ export function useDbStorage() {
     if (!user) return;
     const resolvedState = typeof newState === 'function' ? newState(episodes) : newState;
     const existingIds = new Set(episodes.map(e => e.id));
-    const newOrUpdated = resolvedState.filter(e => !existingIds.has(e.id) || e.content !== episodes.find(x => x.id === e.id)?.content);
+    const newOrUpdated = resolvedState.filter(e => {
+      const existing = episodes.find(x => x.id === e.id);
+      return !existing || e.content !== existing.content || e.summary !== existing.summary || e.direction !== existing.direction;
+    });
 
     for (const ep of newOrUpdated) {
       const epRef = doc(db, 'users', user.uid, 'episodes', ep.id);
       try {
         await setDoc(epRef, {
-          ...ep,
+          id: ep.id,
+          number: ep.number,
+          direction: ep.direction || '',
+          content: ep.content || '',
+          summary: ep.summary || '',
           ownerId: user.uid,
           createdAt: serverTimestamp()
-        }, { merge: true });
+        });
       } catch (error) {
          handleFirestoreError(error, OperationType.WRITE, `users/${user.uid}/episodes/${ep.id}`);
       }
