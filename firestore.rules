@@ -13,6 +13,15 @@ service cloud.firestore {
     function incoming() { return request.resource.data; }
     function existing() { return resource.data; }
     function isSignedIn() { return request.auth != null && request.auth.token.email_verified == true; }
+    
+    function isAdmin() {
+      return isSignedIn() && request.auth.token.email == 'diopacific@gmail.com';
+    }
+
+    function isApproved() {
+      // Admin is always approved
+      return isAdmin() || (isSignedIn() && exists(/databases/$(database)/documents/approved_users/$(request.auth.token.email)));
+    }
 
     // Validation for BibleState
     function isValidBibleState(data) {
@@ -41,18 +50,23 @@ service cloud.firestore {
         && (data.createdAt == request.time || data.createdAt is timestamp);
     }
 
+    match /approved_users/{email} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
     match /users/{userId}/bible/{bibleId} {
-      allow read: if isSignedIn() && userId == request.auth.uid;
-      allow create: if isSignedIn() && userId == request.auth.uid && isValidId(userId) && isValidId(bibleId) && isValidBibleState(incoming());
-      allow update: if isSignedIn() && userId == request.auth.uid && isValidId(userId) && isValidId(bibleId) && isValidBibleState(incoming()) && incoming().ownerId == existing().ownerId;
+      allow read: if isApproved() && userId == request.auth.uid;
+      allow create: if isApproved() && userId == request.auth.uid && isValidId(userId) && isValidId(bibleId) && isValidBibleState(incoming());
+      allow update: if isApproved() && userId == request.auth.uid && isValidId(userId) && isValidId(bibleId) && isValidBibleState(incoming()) && incoming().ownerId == existing().ownerId;
       allow delete: if false; // Don't allow deletion of bible for now
     }
 
     match /users/{userId}/episodes/{episodeId} {
-      allow read: if isSignedIn() && userId == request.auth.uid;
-      allow create: if isSignedIn() && userId == request.auth.uid && isValidId(userId) && isValidId(episodeId) && isValidEpisode(incoming());
-      allow update: if isSignedIn() && userId == request.auth.uid && isValidId(userId) && isValidId(episodeId) && isValidEpisode(incoming()) && incoming().ownerId == existing().ownerId;
-      allow delete: if isSignedIn() && userId == request.auth.uid && isValidId(userId) && isValidId(episodeId);
+      allow read: if isApproved() && userId == request.auth.uid;
+      allow create: if isApproved() && userId == request.auth.uid && isValidId(userId) && isValidId(episodeId) && isValidEpisode(incoming());
+      allow update: if isApproved() && userId == request.auth.uid && isValidId(userId) && isValidId(episodeId) && isValidEpisode(incoming()) && incoming().ownerId == existing().ownerId;
+      allow delete: if isApproved() && userId == request.auth.uid && isValidId(userId) && isValidId(episodeId);
     }
   }
 }

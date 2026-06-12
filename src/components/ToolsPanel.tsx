@@ -1,7 +1,10 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { BibleState, Episode } from '../types';
 import { Button } from './ui/button';
-import { Download, Upload, Trash2, Database, BarChart3, FileType } from 'lucide-react';
+import { Download, Upload, Trash2, Database, BarChart3, FileType, ShieldCheck, UserPlus, X } from 'lucide-react';
+import { useAuth } from '../AuthContext';
+import { db } from '../firebase';
+import { doc, setDoc, deleteDoc, collection, getDocs } from 'firebase/firestore';
 
 interface ToolsPanelProps {
   bible: BibleState;
@@ -12,6 +15,57 @@ interface ToolsPanelProps {
 
 export function ToolsPanel({ bible, episodes, setBible, setEpisodes }: ToolsPanelProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { isAdmin } = useAuth();
+  const [approvedUsers, setApprovedUsers] = useState<string[]>([]);
+  const [newEmail, setNewEmail] = useState('');
+
+  useEffect(() => {
+    if (isAdmin) {
+      loadApprovedUsers();
+    }
+  }, [isAdmin]);
+
+  const loadApprovedUsers = async () => {
+    try {
+      const snapshot = await getDocs(collection(db, 'approved_users'));
+      const users: string[] = [];
+      snapshot.forEach(doc => users.push(doc.id));
+      setApprovedUsers(users);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleAddUser = async () => {
+    if (!newEmail.trim() || !newEmail.includes('@')) {
+      alert('올바른 이메일 주소를 입력해주세요.');
+      return;
+    }
+    try {
+      await setDoc(doc(db, 'approved_users', newEmail.trim()), {
+        approved: true,
+        addedAt: new Date().toISOString()
+      });
+      setNewEmail('');
+      loadApprovedUsers();
+      alert('사용자가 승인되었습니다.');
+    } catch (e) {
+      console.error(e);
+      alert('추가에 실패했습니다.');
+    }
+  };
+
+  const handleRemoveUser = async (email: string) => {
+    if (confirm(`${email} 사용자의 접근 권한을 취소하시겠습니까?`)) {
+      try {
+        await deleteDoc(doc(db, 'approved_users', email));
+        loadApprovedUsers();
+      } catch (e) {
+        console.error(e);
+        alert('삭제에 실패했습니다.');
+      }
+    }
+  };
 
   const handleExportText = () => {
     let output = "=== 설정 바이블 ===\n\n";
@@ -173,6 +227,59 @@ export function ToolsPanel({ bible, episodes, setBible, setEpisodes }: ToolsPane
             모든 데이터 초기화
           </Button>
         </section>
+
+        {/* 관리자 메뉴 */}
+        {isAdmin && (
+          <section className="bg-indigo-50/50 rounded-2xl border border-indigo-100 p-8 mb-8">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 rounded-xl bg-indigo-100 flex items-center justify-center text-indigo-600 border border-indigo-200">
+                <ShieldCheck className="w-5 h-5" />
+              </div>
+              <div>
+                <h2 className="text-lg font-bold text-indigo-900">시스템 관리자 전용: 사용자 승인 관리</h2>
+                <p className="text-sm text-indigo-700/80">승인된 구글 이메일만 이 앱에 액세스할 수 있습니다.</p>
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-3 mb-6">
+              <input 
+                type="email" 
+                placeholder="승인할 이메일 주소 입력" 
+                value={newEmail} 
+                onChange={(e) => setNewEmail(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleAddUser()}
+                className="flex-1 h-11 px-4 rounded-xl border border-indigo-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
+              />
+              <Button onClick={handleAddUser} className="h-11 bg-indigo-600 hover:bg-indigo-700 text-white px-6">
+                <UserPlus className="w-4 h-4 mr-2" /> 승인 추가
+              </Button>
+            </div>
+
+            <div className="bg-white rounded-xl border border-indigo-100 overflow-hidden text-sm">
+              <div className="px-5 py-3 bg-indigo-50 border-b border-indigo-100 font-semibold text-indigo-900 flex justify-between">
+                <span>승인된 사용자 목록</span>
+                <span>총 {approvedUsers.length}명</span>
+              </div>
+              <ul className="divide-y divide-indigo-50">
+                {approvedUsers.map(email => (
+                  <li key={email} className="px-5 py-3 flex items-center justify-between hover:bg-slate-50 transition-colors">
+                    <span className="font-medium text-slate-700">{email}</span>
+                    <button 
+                      onClick={() => handleRemoveUser(email)}
+                      className="text-slate-400 hover:text-red-500 hover:bg-red-50 p-1.5 rounded-lg transition-colors"
+                      title="접근 권한 취소"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </li>
+                ))}
+                {approvedUsers.length === 0 && (
+                  <li className="px-5 py-8 text-center text-slate-500">등록된 사용자가 없습니다.</li>
+                )}
+              </ul>
+            </div>
+          </section>
+        )}
 
       </div>
     </div>

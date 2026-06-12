@@ -13,9 +13,23 @@ function AppContent() {
   const { bible, setBible, episodes, setEpisodes, loading } = useDbStorage();
   const [currentSection, setCurrentSection] = useState<'home' | 'bible' | 'workspace' | 'tools'>('home');
 
-  const requireAuth = (section: 'home' | 'bible' | 'workspace' | 'tools') => {
+  const requireAuth = async (section: 'home' | 'bible' | 'workspace' | 'tools') => {
     if (!user && section !== 'home') {
-      alert('구글 로그인이 필요한 기능입니다.');
+      try {
+        await login();
+        setCurrentSection(section);
+      } catch (e: any) {
+        if (e?.code === 'auth/cancelled-popup-request' || e?.code === 'auth/popup-closed-by-user') {
+          // User closed the popup, do nothing.
+          return;
+        }
+        if (e?.message === 'NOT_APPROVED') {
+          alert('관리자가 승인한 사용자만 이용할 수 있습니다.');
+          return;
+        }
+        console.error('Login failed', e);
+        alert('로그인에 실패했습니다. (팝업 차단 여부를 확인하거나 권한을 허용해주세요.)');
+      }
       return;
     }
     setCurrentSection(section);
@@ -26,10 +40,10 @@ function AppContent() {
       
       {/* Global Top Navigation */}
       <nav className="h-14 bg-slate-900 border-b border-slate-800 flex items-center px-6 justify-between z-50 shrink-0">
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-8">
           <button 
             onClick={() => setCurrentSection('home')} 
-            className="flex items-center text-white font-black text-xl tracking-tight mr-4 hover:text-indigo-400 transition-colors"
+            className="flex items-center text-white font-black text-xl tracking-tight hover:text-indigo-400 transition-colors shrink-0"
           >
             소설공장 스튜디오
           </button>
@@ -47,7 +61,7 @@ function AppContent() {
               icon={<PenTool className="w-4 h-4 mr-2" />} 
               label="집필 공장" 
             />
-            <div className="w-px h-5 bg-slate-800 mx-2"></div>
+            <div className="w-px h-5 bg-slate-800 shrink-0"></div>
             <NavButton 
               active={currentSection === 'tools'} 
               onClick={() => requireAuth('tools')} 
@@ -70,7 +84,18 @@ function AppContent() {
             </div>
           ) : (
             <button 
-              onClick={login}
+              onClick={async () => {
+                try {
+                  await login();
+                } catch (e: any) {
+                  if (e?.code === 'auth/cancelled-popup-request' || e?.code === 'auth/popup-closed-by-user') return;
+                  if (e?.message === 'NOT_APPROVED') {
+                    alert('관리자가 승인한 사용자만 이용할 수 있습니다.');
+                    return;
+                  }
+                  alert('로그인에 실패했습니다.');
+                }
+              }}
               className="flex items-center bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-1.5 rounded-md transition-colors text-sm font-bold"
             >
               <LogIn className="w-4 h-4 mr-1.5" /> 구글 로그인
