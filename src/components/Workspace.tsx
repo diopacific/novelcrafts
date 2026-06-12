@@ -67,12 +67,15 @@ export function Workspace({ bible, episodes, setEpisodes }: WorkspaceProps) {
           episodeNumber: nextEpisodeNum
         })
       });
-      if (!res.ok) throw new Error('API 오류');
+      if (!res.ok) {
+        const errData = await res.json().catch(() => null);
+        throw new Error(errData?.error || 'API 오류');
+      }
       const data = await res.json();
       setSuggestions(data.suggestions || []);
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
-      alert('제안을 불러오지 못했습니다.');
+      alert(`제안을 불러오지 못했습니다: ${e.message}`);
     } finally {
       setLoadingSuggestions(false);
     }
@@ -111,9 +114,9 @@ export function Workspace({ bible, episodes, setEpisodes }: WorkspaceProps) {
       if (data.episodeGoal) {
         setEpisodeGoal(data.episodeGoal);
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
-      alert('플롯 기획 중 오류가 발생했습니다.');
+      alert(`플롯 기획 중 오류가 발생했습니다: ${e.message}`);
     } finally {
       setPlanning(false);
     }

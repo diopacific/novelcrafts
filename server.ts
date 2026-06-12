@@ -30,7 +30,7 @@ ${pastSummary || '아직 작성된 회차가 없습니다. (본격적인 이야�
 위 작품 설정과 최근 흐름을 바탕으로, 제 ${episodeNumber}화에서 전개할 수 있는 흥미로운 "플롯 전개 방향" 3가지를 구체적인 사건 위주로 제안해주세요.`.trim();
 
       const response = await ai.models.generateContent({
-        model: "gemini-2.5-flash",
+        model: "gemini-2.0-flash",
         contents: prompt,
         config: { 
           temperature: 0.8,
@@ -88,7 +88,7 @@ ${userDirection}
 `.trim();
 
       const response = await ai.models.generateContent({
-        model: "gemini-2.5-pro",
+        model: "gemini-2.0-flash",
         contents: prompt,
         config: { 
           temperature: 0.8,
@@ -143,7 +143,7 @@ ${previousScenesContent || '(이번 화의 첫 장면입니다)'}
 `.trim();
 
       const response = await ai.models.generateContent({
-        model: "gemini-2.5-pro",
+        model: "gemini-2.0-flash",
         contents: prompt,
         config: { 
           temperature: 0.7,
@@ -190,7 +190,7 @@ ${fullContent}
 `.trim();
 
       const response = await ai.models.generateContent({
-        model: "gemini-2.5-pro", // Composer Needs high context & reasoning
+        model: "gemini-2.0-flash", // Composer Needs high context & reasoning
         contents: prompt,
         config: { 
           temperature: 0.4,

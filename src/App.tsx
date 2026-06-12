@@ -28,7 +28,7 @@ function AppContent() {
           return;
         }
         console.error('Login failed', e);
-        alert('로그인에 실패했습니다. (팝업 차단 여부를 확인하거나 권한을 허용해주세요.)');
+        alert(`로그인에 실패했습니다. (${e?.message || '알 수 없는 오류'})\n팝업 차단 여부를 확인하거나 권한을 허용해주세요.`);
       }
       return;
     }
