@@ -31,12 +31,12 @@ export function BiblePanel({ bible, setBible }: BiblePanelProps) {
   };
 
   const tabs = [
-    { id: 'story', label: '메인 스토리', description: '기승전결 및 핵심 시놉시스', icon: <Book className="w-5 h-5" /> },
-    { id: 'world', label: '세계관', description: '배경, 국가, 세력구도', icon: <Map className="w-5 h-5" /> },
-    { id: 'system', label: '퇴마/능력', description: '무공, 마법, 시스템 설정', icon: <Swords className="w-5 h-5" /> },
-    { id: 'character', label: '주요 캐릭터', description: '외형, 성격, 행동 양식', icon: <Users className="w-5 h-5" /> },
-    { id: 'villain', label: '초월적 적대세력', description: '안티고니스트, 크리쳐', icon: <Skull className="w-5 h-5" /> },
-    { id: 'structure', label: '작품 구성 및 템포', description: '연재 방식, 시점 전환', icon: <LayoutTemplate className="w-5 h-5" /> },
+    { id: 'story', label: '스토리', description: '기승전결 및 핵심 시놉시스', icon: <Book className="w-5 h-5" /> },
+    { id: 'system', label: '능력', description: '무공, 마법, 특수 체질', icon: <Swords className="w-5 h-5" /> },
+    { id: 'character', label: '캐릭터', description: '주인공 및 주요 인물, 관계도', icon: <Users className="w-5 h-5" /> },
+    { id: 'villain', label: '빌런', description: '최종 보스, 적대 세력', icon: <Skull className="w-5 h-5" /> },
+    { id: 'structure', label: '집필지침', description: '어조, 문체, 주의사항', icon: <LayoutTemplate className="w-5 h-5" /> },
+    { id: 'episode', label: '에피소드', description: '주요 사건과 회차별 개요', icon: <Map className="w-5 h-5" /> },
   ] as const;
 
   return (
@@ -47,8 +47,7 @@ export function BiblePanel({ bible, setBible }: BiblePanelProps) {
         <div className="p-8 pb-6 text-left">
           <h1 className="text-xl font-bold text-slate-800 tracking-tight">설정 공장</h1>
           <p className="text-[13px] text-slate-500 mt-2 font-medium leading-relaxed">
-            총 6개의 파생 설정집을 작성하여 클라우드에 안전하게 저장합니다.<br/>
-            이 설정은 AI가 소설을 생성할 때 가장 높은 <br/>우선순위(Priority 1)로 개입합니다.
+            원고 작성에 필요한 핵심 설정들을 기록하고 클라우드에 안전하게 보관하세요.
           </p>
         </div>
 
@@ -122,11 +121,11 @@ export function BiblePanel({ bible, setBible }: BiblePanelProps) {
                 className="flex-1 lg:h-[600px] h-[400px] text-[15px] leading-relaxed font-medium bg-slate-50/50 focus-visible:bg-white border-slate-200"
                 placeholder={
                   activeTab === 'story' ? "전반적인 주제, 시놉시스, 기승전결(플롯), 떡밥 등을 상세히 적어주세요." :
-                  activeTab === 'world' ? "무대가 되는 대륙, 기후, 국가 간 갈등 상황, 역사적 이슈 등을 적어주세요." :
                   activeTab === 'system' ? "영력, 마법, 특수 체질 등 이 세계관에만 존재하는 규칙과 부작용, 상성 스펙을 명확히 설정하세요." :
-                  activeTab === 'character' ? "주인공의 이름, 성별, 나이, 외양, 성격, 행동 원리, 말투 양식을 구체적으로 잡아주세요." :
+                  activeTab === 'character' ? "주인공의 이름, 성별, 나이, 외양, 성격, 행동 원리, 영적 스탯 등을 구체적으로 잡아주세요." :
                   activeTab === 'villain' ? "최종 보스의 배경, 행동 이유, 산하 조직 정보 등을 적어두면 일관성 있는 갈등 구조가 확립됩니다." :
-                  "예: 1인칭 주인공 시점으로 진행하며 매 화 속도감 있는 액션을 1번 이상 넣는다."
+                  activeTab === 'structure' ? "가독성을 최우선으로, 문장을 어떻게 나눌지, 어떤 시점을 사용할지 등 AI에게 지시할 작법/어조 가이드를 적어주세요." :
+                  "각 에피소드의 주요 사건, 목표, 그리고 회차별 전개 개요를 자유롭게 적어주세요."
                 }
                 value={bible[activeTab]}
                 onChange={(e) => updateField(activeTab, e.target.value)}

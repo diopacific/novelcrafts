@@ -13,7 +13,8 @@ export function useDbStorage() {
     system: '',
     character: '',
     villain: '',
-    structure: ''
+    structure: '',
+    episode: ''
   });
   
   const [episodes, setEpisodesRaw] = useState<Episode[]>([]);
@@ -30,7 +31,8 @@ export function useDbStorage() {
         system: '',
         character: '',
         villain: '',
-        structure: ''
+        structure: '',
+        episode: ''
       });
       setEpisodesRaw([]);
       setLoading(false);
@@ -51,7 +53,8 @@ export function useDbStorage() {
             system: data.system || '',
             character: data.character || '',
             villain: data.villain || '',
-            structure: data.structure || ''
+            structure: data.structure || '',
+            episode: data.episode || ''
           });
         }
 
@@ -105,6 +108,7 @@ export function useDbStorage() {
           character: resolvedState.character || '',
           villain: resolvedState.villain || '',
           structure: resolvedState.structure || '',
+          episode: resolvedState.episode || '',
           ownerId: user.uid,
           updatedAt: serverTimestamp()
         });

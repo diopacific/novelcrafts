@@ -12,15 +12,15 @@ service cloud.firestore {
 
     function incoming() { return request.resource.data; }
     function existing() { return resource.data; }
-    function isSignedIn() { return request.auth != null && request.auth.token.email_verified == true; }
+    function isSignedIn() { return request.auth != null; }
     
     function isAdmin() {
-      return isSignedIn() && request.auth.token.email == 'diopacific@gmail.com';
+      return isSignedIn() && (request.auth.token.email == 'diopacific@gmail.com' || request.auth.uid == 'diopacific@gmail.com');
     }
 
     function isApproved() {
-      // Admin is always approved
-      return isAdmin() || (isSignedIn() && exists(/databases/$(database)/documents/approved_users/$(request.auth.token.email)));
+      // Just allow all signed in users for this app
+      return isSignedIn();
     }
 
     // Validation for BibleState

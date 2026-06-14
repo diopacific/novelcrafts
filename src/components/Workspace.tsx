@@ -2,8 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { BibleState, Episode } from '../types';
 import { Button } from './ui/button';
 import { Textarea } from './ui/textarea';
-import { PenTool, CheckCircle2, ListFilter, Trash2, Edit3, Save, X, Plus } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
+import { PenTool, CheckCircle2, ListFilter, Trash2, Edit3, Save, X, Plus, ChevronUp, ChevronDown, FileText, Search, Replace, BookOpen, Sparkles, Copy } from 'lucide-react';
 import { useAuth } from '../AuthContext';
 
 interface WorkspaceProps {
@@ -28,6 +27,33 @@ export function Workspace({ bible, episodes, setEpisodes }: WorkspaceProps) {
   const [editDirection, setEditDirection] = useState('');
   const [editContent, setEditContent] = useState('');
   const [editSummary, setEditSummary] = useState('');
+
+  // Search & Replace State
+  const [showSearchReplace, setShowSearchReplace] = useState(false);
+  const [searchTarget, setSearchTarget] = useState('');
+  const [replaceValue, setReplaceValue] = useState('');
+
+  // Quick Bible Viewer State
+  const [showQuickBible, setShowQuickBible] = useState(false);
+
+  // AI Prompt Generator State
+  const [showPromptGenerator, setShowPromptGenerator] = useState(false);
+
+  const generatePrompt = (type: 'continue' | 'interactive' | 'build') => {
+    const baseBible = `\n[현행 작품 설정 바이블]\n- 스토리: ${bible.story}\n- 능력: ${bible.system}\n- 캐릭터: ${bible.character}\n- 빌런: ${bible.villain}\n- 집필지침: ${bible.structure}\n- 에피소드: ${bible.episode}\n`;
+    
+    let prompt = '';
+    if (type === 'continue') {
+      prompt = `아래의 '설정 바이블'과 제공하는 '최근 원고'를 기반으로, 다음 장면을 [소설 창작 및 이어 쓰기 모드]로 이어서 작성해줘.\n${baseBible}\n[최근 원고 내용]\n(여기에 최근 원고를 붙여넣으세요)\n\n<지시사항>\n1. 가독성을 위해 문장은 짧고 간결하게 쓰며, 2~3문장마다 줄바꿈할 것.\n2. 대사와 묘사를 균형 있게 배치하고, 사건 중심으로 전개할 것.`;
+    } else if (type === 'interactive') {
+      prompt = `아래의 '설정 바이블'에 명시된 세계관과 캐릭터를 바탕으로, 나를 주인공으로 한 [인터랙티브 선택지 게임 모드]를 진행해줘.\n${baseBible}\n\n<지시사항>\n1. 나(주인공)의 시점인 2인칭(~당신은, ~너는)으로 묘사할 것.\n2. 현재 상황 묘사 직후, 항상 마지막엔 3가지의 명확한 행동 선택지를 제공해 줄 것.`;
+    } else if (type === 'build') {
+      prompt = `아래는 내가 구상 중인 웹소설의 초기 아이디어 및 단편적 설정 구조물(바이블)이야.\n${baseBible}\n\n이 내용을 바탕으로 [소설 설정 및 시놉시스 빌딩 모드]를 수행하여, 아래 포맷에 맞춰 대중적이고 트렌디한 웹소설 기획안으로 확장/보완해줘.\n\n<출력 포맷>\n- 제목 추천 (3개)\n- 로그라인\n- 매력 포인트 (2개)\n- 주요 등장인물 요약\n- 초반 전개 방향`;
+    }
+
+    navigator.clipboard.writeText(prompt);
+    alert('AI 프롬프트가 클립보드에 복사되었습니다! 외부 AI 툴(ChatGPT, Claude, Gemini 등)에 붙여넣기 하세요.');
+  };
 
   // Scroll to bottom when new episodes are added
   useEffect(() => {
@@ -77,16 +103,77 @@ export function Workspace({ bible, episodes, setEpisodes }: WorkspaceProps) {
     }
   };
 
+  const moveEpisode = (index: number, direction: 'up' | 'down') => {
+    if ((direction === 'up' && index === 0) || (direction === 'down' && index === episodes.length - 1)) return;
+
+    setEpisodes(prev => {
+      const newEpisodes = [...prev];
+      const targetIndex = direction === 'up' ? index - 1 : index + 1;
+      
+      // Swap
+      const temp = newEpisodes[index];
+      newEpisodes[index] = newEpisodes[targetIndex];
+      newEpisodes[targetIndex] = temp;
+      
+      // Re-assign numbers
+      return newEpisodes.map((ep, idx) => ({ ...ep, number: idx + 1 }));
+    });
+  };
+
+  const executeGlobalReplace = () => {
+    if (!searchTarget) return;
+    if (confirm(`모든 회차에서 "${searchTarget}"을(를) "${replaceValue}"(으)로 변경하시겠습니까? 이 작업은 되돌릴 수 없습니다.`)) {
+      setEpisodes(prev => prev.map(ep => ({
+        ...ep,
+        content: ep.content.split(searchTarget).join(replaceValue),
+        direction: ep.direction.split(searchTarget).join(replaceValue),
+        summary: ep.summary.split(searchTarget).join(replaceValue),
+      })));
+      alert('일괄 치환이 완료되었습니다.');
+      setShowSearchReplace(false);
+      setSearchTarget('');
+      setReplaceValue('');
+    }
+  };
+
   return (
     <div className="flex-1 flex flex-col h-full bg-[#f8fafc] relative overflow-hidden">
       
       {/* Header */}
       <header className="h-[72px] shrink-0 bg-white border-b border-slate-200 px-8 flex items-center justify-between shadow-sm z-10 sticky top-0">
         <div className="flex flex-col">
-          <h1 className="text-xl font-bold tracking-tight text-slate-800">집필 공장</h1>
+          <h1 className="text-xl font-bold tracking-tight text-slate-800">원고(회차) 보관함</h1>
           <p className="text-sm text-slate-500">다른 툴에서 집필한 원고를 보관하고 관리하세요.</p>
         </div>
         <div className="flex items-center gap-3">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className={`border-emerald-200 ${showPromptGenerator ? 'bg-emerald-50 text-emerald-700' : 'text-slate-600 hover:text-emerald-600 hover:bg-slate-50'}`}
+            onClick={() => setShowPromptGenerator(!showPromptGenerator)}
+          >
+            <Sparkles className="w-4 h-4 mr-1.5 text-emerald-500" />
+            AI 프롬프트 생성기
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className={`border-indigo-200 ${showSearchReplace ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600 hover:text-indigo-600 hover:bg-slate-50'}`}
+            onClick={() => setShowSearchReplace(!showSearchReplace)}
+          >
+            <Search className="w-4 h-4 mr-1.5" />
+            단어 일괄 치환
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className={`border-indigo-200 ${showQuickBible ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600 hover:text-indigo-600 hover:bg-slate-50'}`}
+            onClick={() => setShowQuickBible(!showQuickBible)}
+          >
+            <BookOpen className="w-4 h-4 mr-1.5" />
+            설정집 퀵뷰어
+          </Button>
+          <div className="w-px h-5 bg-slate-200 mx-1"></div>
           <span className="text-sm font-medium text-slate-500 bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200 shadow-inner">
             총 {episodes.length}화 저장됨
           </span>
@@ -94,8 +181,96 @@ export function Workspace({ bible, episodes, setEpisodes }: WorkspaceProps) {
       </header>
 
       {/* Main Content Area */}
-      <div className="flex-1 overflow-y-auto p-8 custom-scrollbar scroll-smooth">
-        <div className="max-w-4xl mx-auto space-y-12 pb-32">
+      <div className="flex-1 flex overflow-hidden">
+        
+        {/* Editor Area */}
+        <div className="flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar scroll-smooth">
+          <div className="max-w-4xl mx-auto space-y-8 md:space-y-12 pb-32">
+            
+            {/* AI Prompt Banner */}
+            {showPromptGenerator && (
+              <div className="bg-gradient-to-r from-emerald-50 to-teal-50 rounded-2xl border border-emerald-200 shadow-[0_8px_30px_rgb(0,0,0,0.06)] overflow-hidden mb-6 flex flex-col p-6 animate-in fade-in slide-in-from-top-4 duration-200">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="font-bold text-lg text-emerald-900 flex items-center">
+                    <Sparkles className="w-5 h-5 mr-2 text-emerald-600" />
+                    외부 AI 연동 프롬프트 생성 (클립보드 복사)
+                  </h3>
+                  <button onClick={() => setShowPromptGenerator(false)} className="text-emerald-400 hover:text-emerald-700">
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+                <p className="text-sm text-emerald-700/80 mb-5 font-medium leading-relaxed">
+                  현재 '설정 공장'에 저장된 [스토리, 능력, 캐릭터, 빌런, 집필지침] 정보를 모두 포함하여,<br/>내가 원하는 AI 모델(ChatGPT, Claude 등)에게 완벽하게 지시할 수 있는 최적의 프롬프트를 복사합니다.
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <Button 
+                    variant="outline" 
+                    onClick={() => generatePrompt('continue')}
+                    className="h-12 bg-white border-emerald-200 hover:bg-emerald-100 hover:border-emerald-300 text-emerald-800 font-bold shadow-sm flex flex-col items-center justify-center pt-1"
+                  >
+                    <span><Copy className="w-3.5 h-3.5 inline mr-1.5 mb-0.5 opacity-70" /> 1. 소설 이어쓰기 복사</span>
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => generatePrompt('interactive')}
+                    className="h-12 bg-white border-emerald-200 hover:bg-emerald-100 hover:border-emerald-300 text-emerald-800 font-bold shadow-sm flex flex-col items-center justify-center pt-1"
+                  >
+                    <span><Copy className="w-3.5 h-3.5 inline mr-1.5 mb-0.5 opacity-70" /> 2. 선택지 게임 복사</span>
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => generatePrompt('build')}
+                    className="h-12 bg-white border-emerald-200 hover:bg-emerald-100 hover:border-emerald-300 text-emerald-800 font-bold shadow-sm flex flex-col items-center justify-center pt-1"
+                  >
+                    <span><Copy className="w-3.5 h-3.5 inline mr-1.5 mb-0.5 opacity-70" /> 3. 설정집 제작 복사</span>
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* Find/Replace Banner */}
+            {showSearchReplace && (
+              <div className="bg-white rounded-2xl border border-indigo-200 shadow-[0_8px_30px_rgb(0,0,0,0.06)] overflow-hidden mb-6 flex flex-col p-6 animate-in fade-in slide-in-from-top-4 duration-200">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-bold text-lg text-indigo-900 flex items-center">
+                    <Replace className="w-5 h-5 mr-2 text-indigo-600" />
+                    전체 원고 단어 일괄 치환
+                  </h3>
+                  <button onClick={() => setShowSearchReplace(false)} className="text-slate-400 hover:text-slate-600">
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+                <p className="text-sm text-slate-500 mb-5">
+                  입력하신 단어를 모든 저장된 회차(본문, 제목, 요약 등)에서 찾아 다른 단어로 한 번에 변경합니다. 예를 들어 주인공의 이름을 한 번에 바꿀 때 유용합니다.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <input 
+                    type="text" 
+                    placeholder="찾을 단어 (예: 철수)" 
+                    className="flex-1 h-10 px-3 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/50 text-sm font-medium"
+                    value={searchTarget}
+                    onChange={e => setSearchTarget(e.target.value)}
+                  />
+                  <div className="hidden sm:flex items-center justify-center text-slate-300">
+                    <Replace className="w-4 h-4" />
+                  </div>
+                  <input 
+                    type="text" 
+                    placeholder="바꿀 단어 (예: 도민준)" 
+                    className="flex-1 h-10 px-3 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/50 text-sm font-medium"
+                    value={replaceValue}
+                    onChange={e => setReplaceValue(e.target.value)}
+                  />
+                  <Button 
+                    onClick={executeGlobalReplace} 
+                    disabled={!searchTarget}
+                    className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm"
+                  >
+                    일괄 변경 실행
+                  </Button>
+                </div>
+              </div>
+            )}
           
           {/* Previous Episodes */}
           {episodes.length === 0 ? (
@@ -109,13 +284,19 @@ export function Workspace({ bible, episodes, setEpisodes }: WorkspaceProps) {
               </p>
             </div>
           ) : (
-            episodes.map(ep => (
+            episodes.map((ep, index) => (
               <div key={ep.id} className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden mb-12">
                 <div className="bg-slate-50 border-b border-slate-200 px-8 py-4 flex items-center justify-between">
                   <div className="flex items-center gap-4">
-                    <h3 className="font-bold text-lg text-slate-800">제 {ep.number} 화</h3>
+                    <h3 className="font-bold text-lg text-slate-800 flex items-center">
+                      제 {ep.number} 화
+                      <span className="ml-4 text-xs font-semibold bg-indigo-100 text-indigo-700 px-2 py-1 rounded-full flex items-center">
+                        <FileText className="w-3 h-3 mr-1" />
+                        {ep.content.length.toLocaleString()} 자
+                      </span>
+                    </h3>
                     {editingId !== ep.id && (
-                      <div className="flex items-center gap-1.5 text-slate-500 text-sm">
+                      <div className="flex items-center gap-1.5 text-slate-500 text-sm ml-2">
                         <CheckCircle2 className="w-4 h-4 text-emerald-500" />
                         <span className="font-medium text-emerald-600">클라우드 저장됨</span>
                       </div>
@@ -132,11 +313,29 @@ export function Workspace({ bible, episodes, setEpisodes }: WorkspaceProps) {
                        </Button>
                      </div>
                   ) : (
-                    <div className="flex gap-2">
-                       <Button variant="ghost" className="h-8 w-8 p-0 text-slate-400 hover:text-indigo-600" onClick={() => startEdit(ep)}>
+                    <div className="flex items-center gap-2">
+                       <div className="flex flex-col mr-2">
+                         <button 
+                           onClick={() => moveEpisode(index, 'up')}
+                           disabled={index === 0}
+                           className="text-slate-400 hover:text-indigo-600 disabled:opacity-30 disabled:hover:text-slate-400"
+                           title="위로 이동"
+                         >
+                           <ChevronUp className="w-4 h-4" />
+                         </button>
+                         <button 
+                           onClick={() => moveEpisode(index, 'down')}
+                           disabled={index === episodes.length - 1}
+                           className="text-slate-400 hover:text-indigo-600 disabled:opacity-30 disabled:hover:text-slate-400"
+                           title="아래로 이동"
+                         >
+                           <ChevronDown className="w-4 h-4" />
+                         </button>
+                       </div>
+                       <Button variant="ghost" className="h-8 w-8 p-0 text-slate-400 hover:text-indigo-600 bg-white border border-slate-200" onClick={() => startEdit(ep)}>
                          <Edit3 className="w-4 h-4" />
                        </Button>
-                       <Button variant="ghost" className="h-8 w-8 p-0 text-slate-400 hover:text-red-500" onClick={() => deleteEpisode(ep.id)}>
+                       <Button variant="ghost" className="h-8 w-8 p-0 text-slate-400 hover:text-red-500 bg-white border border-slate-200" onClick={() => deleteEpisode(ep.id)}>
                          <Trash2 className="w-4 h-4" />
                        </Button>
                     </div>
@@ -253,6 +452,43 @@ export function Workspace({ bible, episodes, setEpisodes }: WorkspaceProps) {
           
           <div ref={endRef} />
         </div>
+        </div>
+
+        {/* Quick Bible Viewer Sidebar */}
+        {showQuickBible && (
+          <div className="w-80 shrink-0 bg-white border-l border-slate-200 overflow-y-auto custom-scrollbar flex flex-col items-stretch animate-in slide-in-from-right-8 duration-300">
+            <div className="p-5 border-b border-slate-100 flex items-center justify-between sticky top-0 bg-white/95 backdrop-blur z-10 shadow-sm">
+              <h3 className="font-bold text-slate-800 flex items-center">
+                <BookOpen className="w-4 h-4 mr-2 text-indigo-600" />
+                설정집 퀵뷰
+              </h3>
+              <button onClick={() => setShowQuickBible(false)} className="text-slate-400 hover:text-slate-600 bg-slate-50 hover:bg-slate-100 p-1 rounded-md">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="p-5 space-y-6">
+              {[
+                { title: '스토리', content: bible.story },
+                { title: '능력', content: bible.system },
+                { title: '캐릭터', content: bible.character },
+                { title: '빌런', content: bible.villain },
+                { title: '집필지침', content: bible.structure },
+                { title: '에피소드', content: bible.episode }
+              ].map((section, idx) => (
+                <div key={idx} className="space-y-2">
+                  <h4 className="text-xs font-black text-slate-500 uppercase tracking-widest">{section.title}</h4>
+                  {section.content ? (
+                    <div className="text-[13px] text-slate-700 leading-relaxed font-medium bg-slate-50 rounded-xl p-3 border border-slate-100 whitespace-pre-wrap">
+                      {section.content}
+                    </div>
+                  ) : (
+                    <p className="text-[13px] text-slate-400 italic px-1">설정이 없습니다.</p>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

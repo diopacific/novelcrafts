@@ -32,24 +32,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (currentUser) {
         setUser(currentUser);
-        // Check if admin or approved
+        // Check if admin
         const email = currentUser.email;
         if (email === 'diopacific@gmail.com') {
           setIsAdmin(true);
-          setIsApproved(true);
-        } else if (email) {
-          try {
-            const approvedDoc = await getDoc(doc(db, 'approved_users', email));
-            if (approvedDoc.exists()) {
-              setIsApproved(true);
-            } else {
-              setIsApproved(false);
-            }
-          } catch (e) {
-            console.error("Error checking approval", e);
-            setIsApproved(false);
-          }
+        } else {
+          setIsAdmin(false);
         }
+        // Unify to always approve signed-in users for draft edits
+        setIsApproved(true);
       } else {
         setUser(null);
         setIsAdmin(false);
@@ -62,28 +53,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = async () => {
     try {
-      const result = await loginWithGoogle();
-      const email = result.user.email;
-      
-      if (email === 'diopacific@gmail.com') {
-         return; // Admin always approved
-      }
-      
-      if (email) {
-        try {
-          const approvedDoc = await getDoc(doc(db, 'approved_users', email));
-          if (!approvedDoc.exists()) {
-            await logout();
-            throw new Error('NOT_APPROVED');
-          }
-        } catch(e: any) {
-           if(e.message === 'NOT_APPROVED') throw e;
-           // If error accessing Firestore
-           await logout();
-           throw new Error('NOT_APPROVED');
-        }
-      }
-
+      await loginWithGoogle();
+      // No need to check approval doc anymore
     } catch (e: any) {
       if (e?.code === 'auth/cancelled-popup-request' || e?.code === 'auth/popup-closed-by-user') {
         console.log('Login popup closed by user.');

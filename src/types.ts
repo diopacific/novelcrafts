@@ -5,6 +5,7 @@ export interface BibleState {
   character: string;
   villain: string;
   structure: string;
+  episode: string;
 }
 
 export interface Episode {
