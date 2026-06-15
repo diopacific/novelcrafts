@@ -8,6 +8,7 @@ export function useDbStorage() {
   const { user } = useAuth();
   
   const [bible, setBibleRaw] = useState<BibleState>({
+    logline: '',
     story: '',
     world: '',
     system: '',
@@ -26,6 +27,7 @@ export function useDbStorage() {
   useEffect(() => {
     if (!user) {
       setBibleRaw({
+        logline: '',
         story: '',
         world: '',
         system: '',
@@ -48,6 +50,7 @@ export function useDbStorage() {
         if (docSnap.exists()) {
           const data = docSnap.data();
           setBibleRaw({
+            logline: data.logline || '',
             story: data.story || '',
             world: data.world || '',
             system: data.system || '',
@@ -102,6 +105,7 @@ export function useDbStorage() {
       const bibleRef = doc(db, 'users', user.uid, 'bible', 'main');
       try {
         await setDoc(bibleRef, {
+          logline: resolvedState.logline || '',
           story: resolvedState.story || '',
           world: resolvedState.world || '',
           system: resolvedState.system || '',

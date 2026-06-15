@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { BibleState, Episode } from '../types';
 import { Button } from './ui/button';
 import { Textarea } from './ui/textarea';
-import { PenTool, CheckCircle2, ListFilter, Trash2, Edit3, Save, X, Plus, ChevronUp, ChevronDown, FileText, Search, Replace, BookOpen, Sparkles, Copy } from 'lucide-react';
+import { PenTool, CheckCircle2, ListFilter, Trash2, Edit3, Save, X, Plus, ChevronUp, ChevronDown, FileText, Search, Replace, BookOpen, Sparkles, Copy, Wand2 } from 'lucide-react';
 import { useAuth } from '../AuthContext';
 
 interface WorkspaceProps {
@@ -19,8 +19,16 @@ export function Workspace({ bible, episodes, setEpisodes }: WorkspaceProps) {
   const [newContent, setNewContent] = useState('');
   const [newSummary, setNewSummary] = useState('');
   
+  // Search state
+  const [searchTerm, setSearchTerm] = useState('');
+
   const nextEpisodeNum = episodes.length + 1;
   const endRef = useRef<HTMLDivElement>(null);
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    alert('본문이 클립보드에 복사되었습니다. 플랫폼에 붙여넣기 하세요!');
+  };
 
   // Edit State
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -40,7 +48,7 @@ export function Workspace({ bible, episodes, setEpisodes }: WorkspaceProps) {
   const [showPromptGenerator, setShowPromptGenerator] = useState(false);
 
   const generatePrompt = (type: 'continue' | 'interactive' | 'build') => {
-    const baseBible = `\n[현행 작품 설정 바이블]\n- 스토리: ${bible.story}\n- 능력: ${bible.system}\n- 캐릭터: ${bible.character}\n- 빌런: ${bible.villain}\n- 집필지침: ${bible.structure}\n- 에피소드: ${bible.episode}\n`;
+    const baseBible = `\n[현행 작품 설정 바이블]\n- 핵심/로그라인: ${bible.logline}\n- 스토리: ${bible.story}\n- 능력: ${bible.system}\n- 캐릭터: ${bible.character}\n- 빌런: ${bible.villain}\n- 집필지침: ${bible.structure}\n- 에피소드: ${bible.episode}\n`;
     
     let prompt = '';
     if (type === 'continue') {
@@ -136,6 +144,30 @@ export function Workspace({ bible, episodes, setEpisodes }: WorkspaceProps) {
     }
   };
 
+  const cleanAIText = (text: string) => {
+    if (!text) return '';
+    let cleaned = text;
+    // Remove markdown bold and italics
+    cleaned = cleaned.replace(/(\*\*|__)(.*?)\1/g, '$2');
+    cleaned = cleaned.replace(/(\*|_)(.*?)\1/g, '$2');
+    // Remove markdown headers
+    cleaned = cleaned.replace(/^#+\s+/gm, '');
+    // Remove markdown blockquotes
+    cleaned = cleaned.replace(/^>\s+/gm, '');
+    // Normalize excessive newlines (more than 2 to just 2)
+    cleaned = cleaned.replace(/\n{3,}/g, '\n\n');
+    // Strip trailing spaces from lines
+    cleaned = cleaned.split('\n').map(line => line.trimEnd()).join('\n');
+    return cleaned;
+  };
+
+  const filteredEpisodes = episodes.filter(ep => 
+    searchTerm === '' || 
+    ep.direction.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    ep.content.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    ep.summary.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   return (
     <div className="flex-1 flex flex-col h-full bg-[#f8fafc] relative overflow-hidden">
       
@@ -146,6 +178,21 @@ export function Workspace({ bible, episodes, setEpisodes }: WorkspaceProps) {
           <p className="text-sm text-slate-500">다른 툴에서 집필한 원고를 보관하고 관리하세요.</p>
         </div>
         <div className="flex items-center gap-3">
+          <div className="relative">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <input 
+              type="text"
+              placeholder="회차 검색 (내용, 제목)..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-9 pr-4 py-1.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 w-64"
+            />
+            {searchTerm && (
+              <button onClick={() => setSearchTerm('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
           <Button 
             variant="outline" 
             size="sm" 
@@ -283,8 +330,18 @@ export function Workspace({ bible, episodes, setEpisodes }: WorkspaceProps) {
                 외부 AI 툴이나 워드프로세서에서 작성하신 원고를 아래 폼에 입력해 영구적으로 보관하세요.
               </p>
             </div>
+          ) : filteredEpisodes.length === 0 ? (
+            <div className="text-center py-20 px-8">
+              <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-6 border border-slate-200 shadow-sm">
+                <Search className="w-8 h-8 text-slate-400" />
+              </div>
+              <h2 className="text-xl font-bold text-slate-700 mb-2">검색 결과가 없습니다</h2>
+              <p className="text-slate-500 max-w-md mx-auto leading-relaxed">
+                다른 검색어를 입력해 보세요.
+              </p>
+            </div>
           ) : (
-            episodes.map((ep, index) => (
+            filteredEpisodes.map((ep, index) => (
               <div key={ep.id} className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden mb-12">
                 <div className="bg-slate-50 border-b border-slate-200 px-8 py-4 flex items-center justify-between">
                   <div className="flex items-center gap-4">
@@ -332,10 +389,13 @@ export function Workspace({ bible, episodes, setEpisodes }: WorkspaceProps) {
                            <ChevronDown className="w-4 h-4" />
                          </button>
                        </div>
-                       <Button variant="ghost" className="h-8 w-8 p-0 text-slate-400 hover:text-indigo-600 bg-white border border-slate-200" onClick={() => startEdit(ep)}>
+                       <Button variant="ghost" className="h-8 w-8 p-0 text-slate-400 hover:text-emerald-600 bg-white border border-slate-200 mr-2" onClick={() => copyToClipboard(ep.content)} title="본문 복사하기">
+                         <Copy className="w-4 h-4" />
+                       </Button>
+                       <Button variant="ghost" className="h-8 w-8 p-0 text-slate-400 hover:text-indigo-600 bg-white border border-slate-200" onClick={() => startEdit(ep)} title="회차 수정">
                          <Edit3 className="w-4 h-4" />
                        </Button>
-                       <Button variant="ghost" className="h-8 w-8 p-0 text-slate-400 hover:text-red-500 bg-white border border-slate-200" onClick={() => deleteEpisode(ep.id)}>
+                       <Button variant="ghost" className="h-8 w-8 p-0 text-slate-400 hover:text-red-500 bg-white border border-slate-200" onClick={() => deleteEpisode(ep.id)} title="단건 삭제">
                          <Trash2 className="w-4 h-4" />
                        </Button>
                     </div>
@@ -360,7 +420,24 @@ export function Workspace({ bible, episodes, setEpisodes }: WorkspaceProps) {
                 <div className="p-8 pb-10">
                   {editingId === ep.id ? (
                     <div className="space-y-2">
-                      <label className="text-sm font-bold text-slate-700">본문 원고 수정</label>
+                      <div className="flex justify-between items-center">
+                        <div className="flex items-center gap-3">
+                          <label className="text-sm font-bold text-slate-700">본문 원고 수정</label>
+                          <span className="text-[12px] font-mono text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200">
+                            공백포함 <span className="font-bold text-slate-700">{editContent.length}</span>자 <span className="text-slate-300 mx-1">|</span> 공백제외 <span className="font-bold text-slate-700">{editContent.replace(/\s/g, '').length}</span>자
+                          </span>
+                        </div>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={() => setEditContent(cleanAIText(editContent))}
+                          className="text-indigo-600 border-indigo-200 hover:bg-indigo-50 h-8 text-xs px-3"
+                          disabled={!editContent}
+                        >
+                          <Wand2 className="w-3.5 h-3.5 mr-1.5" />
+                          AI 텍스트 정제
+                        </Button>
+                      </div>
                       <Textarea 
                         className="h-96 text-[15px] font-serif leading-relaxed"
                         value={editContent}
@@ -415,9 +492,26 @@ export function Workspace({ bible, episodes, setEpisodes }: WorkspaceProps) {
               </div>
 
               <div className="space-y-3 pt-2">
-                <label className="block text-[14px] font-bold text-slate-800">
-                  본문 원고
-                </label>
+                <div className="flex justify-between items-center mb-2">
+                  <div className="flex items-center gap-3">
+                    <label className="block text-[14px] font-bold text-slate-800">
+                      본문 원고
+                    </label>
+                    <span className="text-[12px] font-mono text-slate-500 bg-slate-50 px-2 py-0.5 rounded-md border border-slate-200">
+                      공백포함 <span className="font-bold text-slate-700">{newContent.length}</span>자 <span className="text-slate-300 mx-1">|</span> 공백제외 <span className="font-bold text-slate-700">{newContent.replace(/\s/g, '').length}</span>자
+                    </span>
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => setNewContent(cleanAIText(newContent))}
+                    className="text-indigo-600 border-indigo-200 hover:bg-indigo-50 h-8 text-xs px-3"
+                    disabled={!newContent}
+                  >
+                    <Wand2 className="w-3.5 h-3.5 mr-1.5" />
+                    AI 텍스트 정제 (마크다운/공백 제거)
+                  </Button>
+                </div>
                 <Textarea 
                   placeholder={`외부에서 집필하신 본문 내용을 이곳에 붙여넣기 하세요.`}
                   className="h-64 bg-slate-50 border-slate-200 focus-visible:bg-white text-[15px] font-serif leading-relaxed"
@@ -468,6 +562,7 @@ export function Workspace({ bible, episodes, setEpisodes }: WorkspaceProps) {
             </div>
             <div className="p-5 space-y-6">
               {[
+                { title: '핵심/로그라인', content: bible.logline },
                 { title: '스토리', content: bible.story },
                 { title: '능력', content: bible.system },
                 { title: '캐릭터', content: bible.character },

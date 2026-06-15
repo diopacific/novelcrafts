@@ -19,20 +19,22 @@ service cloud.firestore {
     }
 
     function isApproved() {
-      // Just allow all signed in users for this app
-      return isSignedIn();
+      // Allow only the sole admin
+      return isAdmin();
     }
 
     // Validation for BibleState
     function isValidBibleState(data) {
-      return data.keys().hasAll(['story', 'world', 'system', 'character', 'villain', 'structure', 'ownerId', 'updatedAt'])
-        && data.keys().size() == 8
+      return data.keys().hasAll(['logline', 'story', 'world', 'system', 'character', 'villain', 'structure', 'episode', 'ownerId', 'updatedAt'])
+        && data.keys().size() >= 8
+        && data.logline is string && data.logline.size() <= 100000
         && data.story is string && data.story.size() <= 100000
         && data.world is string && data.world.size() <= 100000
         && data.system is string && data.system.size() <= 100000
         && data.character is string && data.character.size() <= 100000
         && data.villain is string && data.villain.size() <= 100000
         && data.structure is string && data.structure.size() <= 100000
+        && data.episode is string && data.episode.size() <= 100000
         && data.ownerId is string && data.ownerId == request.auth.uid
         && (data.updatedAt == request.time || data.updatedAt is timestamp); // We'll just allow Timestamp for simplicity if written from client
     }
@@ -40,12 +42,14 @@ service cloud.firestore {
     // Validation for Episode
     function isValidEpisode(data) {
       return data.keys().hasAll(['id', 'number', 'direction', 'content', 'summary', 'ownerId', 'createdAt'])
-        && data.keys().size() == 7
+        && data.keys().size() >= 7
         && data.id is string && data.id.size() <= 128
         && data.number is number
         && data.direction is string && data.direction.size() <= 100000
         && data.content is string && data.content.size() <= 100000
         && data.summary is string && data.summary.size() <= 100000
+        && (!('authorNote' in data) || (data.authorNote is string && data.authorNote.size() <= 100000))
+        && (!('status' in data) || (data.status is string && data.status.size() <= 20))
         && data.ownerId is string && data.ownerId == request.auth.uid
         && (data.createdAt == request.time || data.createdAt is timestamp);
     }

@@ -15,7 +15,7 @@ export function ToolsPanel({ bible, episodes, setBible, setEpisodes }: ToolsPane
 
   const handleExportText = () => {
     let output = "=== 설정 공장 ===\n\n";
-    output += `[스토리]\n${bible.story}\n\n[능력]\n${bible.system}\n\n[캐릭터]\n${bible.character}\n\n[빌런]\n${bible.villain}\n\n[집필지침]\n${bible.structure}\n\n[에피소드]\n${bible.episode}\n\n`;
+    output += `[핵심/로그라인]\n${bible.logline}\n\n[스토리]\n${bible.story}\n\n[능력]\n${bible.system}\n\n[캐릭터]\n${bible.character}\n\n[빌런]\n${bible.villain}\n\n[집필지침]\n${bible.structure}\n\n[에피소드]\n${bible.episode}\n\n`;
     output += "===================\n\n";
 
     episodes.forEach(ep => {
@@ -23,6 +23,30 @@ export function ToolsPanel({ bible, episodes, setBible, setEpisodes }: ToolsPane
     });
 
     downloadBlob(output, `novel_export_${new Date().toISOString().slice(0, 10)}.txt`, 'text/plain');
+  };
+
+  const handleExportBibleOnlyText = () => {
+    let output = "=== 설정 공장 (바이블 단독) ===\n\n";
+    output += `[핵심/로그라인]\n${bible.logline}\n\n[스토리]\n${bible.story}\n\n[능력]\n${bible.system}\n\n[캐릭터]\n${bible.character}\n\n[빌런]\n${bible.villain}\n\n[집필지침]\n${bible.structure}\n\n[에피소드]\n${bible.episode}\n\n`;
+    output += "===================\n\n";
+    downloadBlob(output, `novel_bible_${new Date().toISOString().slice(0, 10)}.txt`, 'text/plain');
+  };
+
+  const handleCopyTextToClipboard = async () => {
+    let output = "=== 설정 공장 ===\n\n";
+    output += `[핵심/로그라인]\n${bible.logline}\n\n[스토리]\n${bible.story}\n\n[능력]\n${bible.system}\n\n[캐릭터]\n${bible.character}\n\n[빌런]\n${bible.villain}\n\n[집필지침]\n${bible.structure}\n\n[에피소드]\n${bible.episode}\n\n`;
+    output += "===================\n\n";
+
+    episodes.forEach(ep => {
+      output += `\n\n제 ${ep.number} 화\n\n${ep.content}\n\n`;
+    });
+
+    try {
+      await navigator.clipboard.writeText(output);
+      alert('설정 및 모든 회차 내용이 클립보드에 복사되었습니다.');
+    } catch (err) {
+      alert('클립보드 복사에 실패했습니다.');
+    }
   };
 
   const handleExportJson = () => {
@@ -66,16 +90,21 @@ export function ToolsPanel({ bible, episodes, setBible, setEpisodes }: ToolsPane
   };
 
   const handleResetAll = () => {
-    if (confirm('설정집과 모든 회차가 삭제됩니다. 이 작업은 되돌릴 수 없습니다. 정말 초기화하시겠습니까?')) {
+    const confirmText = window.prompt('설정집과 모든 회차가 삭제됩니다. 이 작업은 되돌릴 수 없습니다. \n정말 초기화하시려면 "초기화"라고 입력해주세요.');
+    if (confirmText === '초기화') {
       setBible({
-        story: '', world: '', system: '', character: '', villain: '', structure: ''
+        logline: '', story: '', world: '', system: '', character: '', villain: '', structure: '', episode: ''
       });
       setEpisodes([]);
-      alert('초기화 완료되었습니다.');
+      alert('데이터가 안전하게 초기화되었습니다.');
+    } else if (confirmText !== null) {
+      alert('입력한 텍스트가 일치하지 않아 취소되었습니다.');
     }
   };
 
   const totalCharacters = episodes.reduce((acc, ep) => acc + ep.content.length, 0);
+  const totalCharactersNoSpaces = episodes.reduce((acc, ep) => acc + ep.content.replace(/\s/g, '').length, 0);
+  const avgCharacters = episodes.length > 0 ? Math.round(totalCharacters / episodes.length) : 0;
 
   return (
     <div className="flex-1 flex flex-col h-full bg-[#f8fafc] overflow-y-auto w-full custom-scrollbar">
@@ -92,19 +121,27 @@ export function ToolsPanel({ bible, episodes, setBible, setEpisodes }: ToolsPane
               <BarChart3 className="w-5 h-5 text-indigo-600" />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-slate-800">작품 통계</h2>
-              <p className="text-sm text-slate-500">현재까지 집필된 작품의 규모를 확인합니다.</p>
+              <h2 className="text-lg font-bold text-slate-800">작품 집필 통계</h2>
+              <p className="text-sm text-slate-500">현재까지 집필된 플랫폼 연재 기준의 규모를 확인합니다.</p>
             </div>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="bg-slate-50 p-6 rounded-xl border border-slate-100">
               <span className="text-sm font-semibold text-slate-500 block mb-1">총 누적 회차</span>
               <span className="text-3xl font-black text-slate-800">{episodes.length} <span className="text-lg font-bold text-slate-400">화</span></span>
             </div>
             <div className="bg-slate-50 p-6 rounded-xl border border-slate-100">
-              <span className="text-sm font-semibold text-slate-500 block mb-1">총 누적 글자수 (공백 포함)</span>
+              <span className="text-[13px] font-semibold text-slate-500 block mb-1">총 글자수 (공백 포함)</span>
               <span className="text-3xl font-black text-slate-800">{totalCharacters.toLocaleString()} <span className="text-lg font-bold text-slate-400">자</span></span>
+            </div>
+            <div className="bg-slate-50 p-6 rounded-xl border border-slate-100">
+              <span className="text-[13px] font-semibold text-slate-500 block mb-1">총 글자수 (공백 제외)</span>
+              <span className="text-3xl font-black text-indigo-700">{totalCharactersNoSpaces.toLocaleString()} <span className="text-lg font-bold text-slate-400">자</span></span>
+            </div>
+            <div className="bg-slate-50 p-6 rounded-xl border border-slate-100">
+              <span className="text-[13px] font-semibold text-slate-500 block mb-1">회차당 평균 글자수</span>
+              <span className="text-2xl font-black text-emerald-600">{avgCharacters.toLocaleString()} <span className="text-sm font-bold text-slate-400">자/화</span></span>
             </div>
           </div>
         </section>
@@ -147,12 +184,20 @@ export function ToolsPanel({ bible, episodes, setBible, setEpisodes }: ToolsPane
             
             <div className="flex flex-col sm:flex-row gap-4 p-4 rounded-xl border border-slate-100 bg-slate-50 items-center justify-between">
               <div>
-                <h3 className="font-bold text-slate-700 text-[15px]">완성본 내보내기 (TXT)</h3>
-                <p className="text-sm text-slate-500 mt-0.5">설정집과 에피소드를 모두 하나의 텍스트 파일로 묶어서 다운로드합니다.</p>
+                <h3 className="font-bold text-slate-700 text-[15px]">완성본 내보내기 및 복사 (TXT)</h3>
+                <p className="text-sm text-slate-500 mt-0.5">설정집과 에피소드를 파일로 내보내거나 텍스트로 복사합니다.</p>
               </div>
-              <Button variant="secondary" onClick={handleExportText} className="shrink-0 bg-white border border-slate-200">
-                <FileType className="w-4 h-4 mr-2" /> TXT 내보내기
-              </Button>
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={handleExportBibleOnlyText} className="shrink-0 bg-white border-slate-200">
+                  설정집만 내보내기
+                </Button>
+                <Button variant="outline" onClick={handleCopyTextToClipboard} className="shrink-0 bg-white border-slate-200">
+                  클립보드 복사
+                </Button>
+                <Button variant="secondary" onClick={handleExportText} className="shrink-0 bg-white border border-slate-200">
+                  <FileType className="w-4 h-4 mr-2" /> 전체 내보내기
+                </Button>
+              </div>
             </div>
           </div>
         </section>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { BibleState } from '../types';
 import { Textarea } from './ui/textarea';
-import { Book, Users, Map, Swords, Skull, LayoutTemplate, Save, Cloud, Loader2 } from 'lucide-react';
+import { Book, Users, Map, Swords, Skull, LayoutTemplate, Save, Cloud, Loader2, Zap } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 interface BiblePanelProps {
@@ -31,8 +31,9 @@ export function BiblePanel({ bible, setBible }: BiblePanelProps) {
   };
 
   const tabs = [
+    { id: 'logline', label: '핵심/로그라인', description: '제목, 장르, 로그라인, 기대효과', icon: <Zap className="w-5 h-5" /> },
     { id: 'story', label: '스토리', description: '기승전결 및 핵심 시놉시스', icon: <Book className="w-5 h-5" /> },
-    { id: 'system', label: '능력', description: '무공, 마법, 특수 체질', icon: <Swords className="w-5 h-5" /> },
+    { id: 'system', label: '능력', description: '치트, 무공, 마법, 특수 체질', icon: <Swords className="w-5 h-5" /> },
     { id: 'character', label: '캐릭터', description: '주인공 및 주요 인물, 관계도', icon: <Users className="w-5 h-5" /> },
     { id: 'villain', label: '빌런', description: '최종 보스, 적대 세력', icon: <Skull className="w-5 h-5" /> },
     { id: 'structure', label: '집필지침', description: '어조, 문체, 주의사항', icon: <LayoutTemplate className="w-5 h-5" /> },
@@ -120,12 +121,13 @@ export function BiblePanel({ bible, setBible }: BiblePanelProps) {
               <Textarea 
                 className="flex-1 lg:h-[600px] h-[400px] text-[15px] leading-relaxed font-medium bg-slate-50/50 focus-visible:bg-white border-slate-200"
                 placeholder={
-                  activeTab === 'story' ? "전반적인 주제, 시놉시스, 기승전결(플롯), 떡밥 등을 상세히 적어주세요." :
-                  activeTab === 'system' ? "영력, 마법, 특수 체질 등 이 세계관에만 존재하는 규칙과 부작용, 상성 스펙을 명확히 설정하세요." :
-                  activeTab === 'character' ? "주인공의 이름, 성별, 나이, 외양, 성격, 행동 원리, 영적 스탯 등을 구체적으로 잡아주세요." :
-                  activeTab === 'villain' ? "최종 보스의 배경, 행동 이유, 산하 조직 정보 등을 적어두면 일관성 있는 갈등 구조가 확립됩니다." :
-                  activeTab === 'structure' ? "가독성을 최우선으로, 문장을 어떻게 나눌지, 어떤 시점을 사용할지 등 AI에게 지시할 작법/어조 가이드를 적어주세요." :
-                  "각 에피소드의 주요 사건, 목표, 그리고 회차별 전개 개요를 자유롭게 적어주세요."
+                  activeTab === 'logline' ? "• [장르] (예: 현대판타지, 회빙환)\n• [제목 추천 후보]\n• [로그라인/1줄 요약] (예: 최하급 헌터가 죽음 직전 과거로 돌아가 모든 걸 씹어먹는 이야기)\n• [기대효과/독자 후킹 포인트] (예: 사이다 전개, 성좌들의 반응)" :
+                  activeTab === 'story' ? "• [전반적인 주제]\n• [핵심 시놉시스 (3줄 요약)]\n• [기승전결(플롯) 및 주요 갈등]\n• [1~15화 초반 전개 방향 및 떡밥]" :
+                  activeTab === 'system' ? "• [치트키/사이다 액션 요소]\n• [주인공만의 특별한 능력/상태창/보상 시스템]\n• [세계관 고유의 마법/무공 규칙과 부작용]\n• [상성 및 스펙 밸런스 설정]" :
+                  activeTab === 'character' ? "• [주인공] (이름, 외양, 결핍, 성격, 행동 원리, 영적 스탯, 치트 능력)\n• [주요 조력자/동료] (이름, 능력, 주인공과의 관계)\n• [캐릭터 관계도 및 케미스트리 포인트]" :
+                  activeTab === 'villain' ? "• [최종 보스/흑막] (배경, 목적, 행동 이유)\n• [중간 보스 및 안티고니스트]\n• [주인공과의 대립 구조 및 적대 세력(산하 조직)]\n• [위기감 조성 방식]" :
+                  activeTab === 'structure' ? "• [어조 및 문체] (예: 가독성을 최우선으로, 짧고 간결한 문장, 웹소설식 엔터키 활용)\n• [전개 속도] (예: 지루한 설명은 빼고 대사와 행동 위주로)\n• [시점] (예: 1인칭 주인공 시점, 독백과 내면 심리 적극 활용)\n• [클리프행어/회차 끊기 규칙]" :
+                  "• [현재 진행 중인 에피소드 목표]\n• [이 회차의 주요 사건 및 갈등]\n• [주인공이 얻게 되는 보상 혹은 깨달음]\n• [회차별 전개 개요 자유 작성]"
                 }
                 value={bible[activeTab]}
                 onChange={(e) => updateField(activeTab, e.target.value)}

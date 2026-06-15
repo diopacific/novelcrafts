@@ -1,4 +1,5 @@
 export interface BibleState {
+  logline: string;
   story: string;
   world: string;
   system: string;
@@ -14,4 +15,6 @@ export interface Episode {
   direction: string;
   content: string;
   summary: string;
+  authorNote?: string;
+  status?: 'draft' | 'revision' | 'completed';
 }

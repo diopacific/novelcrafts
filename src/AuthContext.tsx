@@ -31,16 +31,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     testConnection(); // Ensure connection works on start
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (currentUser) {
-        setUser(currentUser);
         // Check if admin
         const email = currentUser.email;
         if (email === 'diopacific@gmail.com') {
+          setUser(currentUser);
           setIsAdmin(true);
+          setIsApproved(true);
         } else {
+          // Deny others
+          setUser(null);
           setIsAdmin(false);
+          setIsApproved(false);
+          await logout();
+          alert('접근 권한이 없습니다. 관리자만 로그인할 수 있습니다.');
         }
-        // Unify to always approve signed-in users for draft edits
-        setIsApproved(true);
       } else {
         setUser(null);
         setIsAdmin(false);
