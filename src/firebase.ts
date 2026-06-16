@@ -24,7 +24,22 @@ export async function loginWithGoogle() {
   provider.setCustomParameters({
     prompt: 'select_account'
   });
-  return signInWithPopup(auth, provider);
+  
+  try {
+    return await signInWithPopup(auth, provider);
+  } catch (error: any) {
+    if (error.code === 'auth/unauthorized-domain') {
+      const currentDomain = window.location.hostname;
+      alert(`[통신 차단됨] 현재 도메인(${currentDomain})이 Firebase에 등록되지 않았습니다.\n\n해결 방법:\n1. 파이어베이스 콘솔(Firebase Console) 접속\n2. Authentication(인증) -> Settings(설정) -> Authorized domains(승인된 도메인) 이동\n3. '${currentDomain}' 를 추가해주세요.`);
+      throw error;
+    } else if (error.code === 'auth/popup-blocked' || error.code === 'auth/popup-closed-by-user') {
+      alert("팝업이 차단되었거나 닫혔습니다. 로그인 창이 뜨지 않는다면 팝업 차단을 해제해주세요.");
+      throw error;
+    } else {
+      console.error("Login failed", error);
+      throw error;
+    }
+  }
 }
 
 export async function logout() {
