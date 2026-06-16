@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { BibleState } from '../types';
+import { Button } from './ui/button';
 import { Textarea } from './ui/textarea';
-import { Book, Users, Map, Swords, Skull, LayoutTemplate, Save, Cloud, Loader2, Zap } from 'lucide-react';
+import { Book, Users, Map, Swords, Skull, LayoutTemplate, Save, Cloud, Loader2, Zap, Copy, FilePlus } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 interface BiblePanelProps {
@@ -19,7 +20,6 @@ export function BiblePanel({ bible, setBible }: BiblePanelProps) {
   useEffect(() => {
     setSaveStatus('saving');
     const timer = setTimeout(() => {
-      // simulate save status reflection since setBible is fast & optimistic
       setSaveStatus('saved');
       setTimeout(() => setSaveStatus('idle'), 2000);
     }, 1000);
@@ -28,6 +28,47 @@ export function BiblePanel({ bible, setBible }: BiblePanelProps) {
 
   const updateField = (field: keyof BibleState, value: string) => {
     setBible({ ...bible, [field]: value });
+  };
+
+  const insertTemplate = () => {
+    let template = '';
+    switch(activeTab) {
+        case 'logline':
+            template = "■ 제목 후보\n1. \n2. \n3. \n\n■ 장르\n- \n\n■ 로그라인 (1줄 요약)\n- \n\n■ 핵심 셀링 포인트 (사이다 요소, 매력 포인트)\n1. \n2. \n";
+            break;
+        case 'story':
+            template = "■ 핵심 갈등 플롯\n- \n\n■ 기승전결 플롯 (3줄 요약)\n[기] (발단 및 목적 부여): \n[승] (장애물과 시련): \n[전] (위기 및 전환점): \n[결] (카타르시스와 보상): \n\n■ 초반 전개 (1~5화) 요약\n- \n";
+            break;
+        case 'system':
+            template = "■ 주인공의 고유 능력 (치트)\n- \n\n■ 파워 밸런스 / 성장의 척도\n- \n\n■ 세계관 특수 설정 (마법/무공/상태창)\n- \n\n■ 패널티 / 한계점\n- \n";
+            break;
+        case 'character':
+            template = "■ 주인공\n- 이름: \n- 성격/행동 원리: \n- 외형: \n- 핵심 결핍/욕망: \n- 주요 능력: \n\n■ 주요 조력자 1\n- 이름: \n- 주인공과의 관계: \n- 특징: \n\n■ 임시 인물들\n- \n";
+            break;
+        case 'villain':
+            template = "■ 최종 보스/흑막\n- 정체: \n- 목적: \n- 압도적인 능력/규모: \n\n■ 대립 세력 / 안티고니스트\n- \n\n■ 대립 이유\n- \n";
+            break;
+        case 'structure':
+            template = "■ 어조 및 문체\n- \n\n■ 시점\n- \n\n■ 전개 속도 및 주의사항\n- 웹소설식 짧고 간결한 문장 사용 (2~3문장마다 줄바꿈)\n- 지루한 설명은 빼고 대사와 행동 위주로 전개\n\n■ 회차 끊기 / 클리프행어 지침\n- \n";
+            break;
+        case 'episode':
+            template = "■ [진행 중] 에피소드 개요\n- 메인 목표: \n- 주요 사건: \n- 얻게 되는 보상/카타르시스: \n\n■ 회차별 트리트먼트\n1화: \n2화: \n3화: \n";
+            break;
+    }
+    
+    // Append or replace? Append with newlines if content exists.
+    const currentText = bible[activeTab];
+    const newText = currentText ? currentText + "\n\n" + template : template;
+    updateField(activeTab, newText);
+  };
+
+  const copyToClipboard = async () => {
+    try {
+      await navigator.clipboard.writeText(bible[activeTab]);
+      alert('현재 탭의 내용이 클립보드에 복사되었습니다.');
+    } catch (err) {
+      alert('복사에 실패했습니다.');
+    }
   };
 
   const tabs = [
@@ -86,29 +127,52 @@ export function BiblePanel({ bible, setBible }: BiblePanelProps) {
              <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center border border-indigo-100">
                {tabs.find(t => t.id === activeTab)?.icon}
              </div>
-             <h2 className="text-lg font-bold text-slate-800">
-               {tabs.find(t => t.id === activeTab)?.label}
-             </h2>
+             <div>
+               <h2 className="text-lg font-bold text-slate-800">
+                 {tabs.find(t => t.id === activeTab)?.label}
+               </h2>
+             </div>
            </div>
-           {/* Cloud Sync Status */}
-           <div className="flex items-center gap-2 text-sm font-semibold">
-              {saveStatus === 'saving' ? (
-                 <span className="text-slate-500 bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200 flex items-center gap-2">
-                   <Loader2 className="w-4 h-4 animate-spin" /> 클라우드에 동기화 중...
-                 </span>
-              ) : saveStatus === 'saved' ? (
-                 <span className="text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-100 flex items-center gap-2">
-                   <Cloud className="w-4 h-4" /> 모든 설정이 클라우드에 안전하게 저장되었습니다
-                 </span>
-              ) : (
-                 <span className="text-slate-400 flex items-center gap-2">
-                   <Cloud className="w-4 h-4" /> 클라우드 동기화 됨
-                 </span>
-              )}
+           
+           <div className="flex items-center gap-4">
+             {/* Text Stats */}
+             <div className="hidden md:flex items-center gap-1.5 text-xs font-semibold bg-slate-100 text-slate-600 px-2 py-1 rounded-md">
+               <span>공백포함: {bible[activeTab].length.toLocaleString()}자</span>
+             </div>
+
+             {/* Cloud Sync Status */}
+             <div className="flex items-center gap-2 text-[13px] font-semibold tracking-wide border-l border-slate-200 pl-4">
+                {saveStatus === 'saving' ? (
+                   <span className="text-slate-500 flex items-center gap-2">
+                     <Loader2 className="w-3.5 h-3.5 animate-spin" /> 동기화 중...
+                   </span>
+                ) : saveStatus === 'saved' ? (
+                   <span className="text-emerald-600 flex items-center gap-2">
+                     <Cloud className="w-3.5 h-3.5" /> 클라우드 저장됨
+                   </span>
+                ) : (
+                   <span className="text-slate-400 flex items-center gap-2">
+                     <Cloud className="w-3.5 h-3.5 opacity-50" /> 동기화 완료
+                   </span>
+                )}
+             </div>
            </div>
         </header>
 
-        <div className="flex-1 p-8 overflow-y-auto custom-scrollbar">
+        {/* Action Toolbar */}
+        <div className="border-b border-slate-100 bg-white/50 px-8 py-3 flex items-center justify-between shadow-sm z-10 shrink-0">
+           <p className="text-[13px] text-slate-500 font-medium">자동 양식을 사용하면 틀에 맞춰 쉽게 설정을 정리할 수 있습니다.</p>
+           <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={insertTemplate} className="text-indigo-600 border-indigo-200 hover:bg-indigo-50 bg-white h-8 text-[13px]">
+                <FilePlus className="w-3.5 h-3.5 mr-1.5" /> 템플릿(양식) 채우기
+              </Button>
+              <Button variant="outline" size="sm" onClick={copyToClipboard} className="text-slate-600 border-slate-200 hover:bg-slate-50 bg-white h-8 text-[13px]">
+                <Copy className="w-3.5 h-3.5 mr-1.5" /> 현재 탭 복사
+              </Button>
+           </div>
+        </div>
+
+        <div className="flex-1 p-8 overflow-y-auto custom-scrollbar bg-slate-50/30">
           <AnimatePresence mode="wait">
             <motion.div 
               key={activeTab} 
@@ -119,7 +183,7 @@ export function BiblePanel({ bible, setBible }: BiblePanelProps) {
               className="h-full flex flex-col max-w-4xl mx-auto w-full"
             >
               <Textarea 
-                className="flex-1 lg:h-[600px] h-[400px] text-[15px] leading-relaxed font-medium bg-slate-50/50 focus-visible:bg-white border-slate-200"
+                className="flex-1 h-full min-h-[400px] text-[15px] leading-relaxed font-medium bg-white focus-visible:bg-white border-slate-200 shadow-sm resize-none rounded-xl p-6"
                 placeholder={
                   activeTab === 'logline' ? "• [장르] (예: 현대판타지, 회빙환)\n• [제목 추천 후보]\n• [로그라인/1줄 요약] (예: 최하급 헌터가 죽음 직전 과거로 돌아가 모든 걸 씹어먹는 이야기)\n• [기대효과/독자 후킹 포인트] (예: 사이다 전개, 성좌들의 반응)" :
                   activeTab === 'story' ? "• [전반적인 주제]\n• [핵심 시놉시스 (3줄 요약)]\n• [기승전결(플롯) 및 주요 갈등]\n• [1~15화 초반 전개 방향 및 떡밥]" :

@@ -72,17 +72,21 @@ export function ToolsPanel({ bible, episodes, setBible, setEpisodes }: ToolsPane
     reader.onload = (event) => {
       try {
         const parsed = JSON.parse(event.target?.result as string);
-        if (parsed.bible && parsed.episodes) {
-          if (confirm('현재 작성된 데이터가 덮어씌워집니다. 계속하시겠습니까?')) {
-            setBible(parsed.bible);
-            setEpisodes(parsed.episodes);
-            alert('성공적으로 복구되었습니다.');
+        if (parsed && typeof parsed === 'object') {
+          if (parsed.bible !== undefined || parsed.episodes !== undefined) {
+             if (confirm('현재 작성된 데이터가 덮어씌워집니다. 계속하시겠습니까?')) {
+               if (parsed.bible) setBible(parsed.bible);
+               if (parsed.episodes) setEpisodes(parsed.episodes);
+               alert('성공적으로 복구되었습니다.');
+             }
+          } else {
+             alert('호환되지 않는 백업 파일 형식입니다. (bible 또는 episodes 필드 누락)');
           }
         } else {
-          alert('올바르지 않은 백업 파일 형식입니다.');
+          alert('올바른 JSON 형식이 아닙니다.');
         }
       } catch (error) {
-        alert('파일을 파싱하는 중 오류가 발생했습니다.');
+        alert('파일을 파싱하는 중 오류가 발생했습니다. 파일이 손상되었을 수 있습니다.');
       }
     };
     reader.readAsText(file);
@@ -105,11 +109,15 @@ export function ToolsPanel({ bible, episodes, setBible, setEpisodes }: ToolsPane
   const totalCharacters = episodes.reduce((acc, ep) => acc + ep.content.length, 0);
   const totalCharactersNoSpaces = episodes.reduce((acc, ep) => acc + ep.content.replace(/\s/g, '').length, 0);
   const avgCharacters = episodes.length > 0 ? Math.round(totalCharacters / episodes.length) : 0;
+  
+  // 집필 목표 달성률 (유료화 기준: 약 15만자)
+  const MILESTONE_TARGET = 150000;
+  const progressPercent = Math.min(100, Math.round((totalCharacters / MILESTONE_TARGET) * 100));
 
   return (
     <div className="flex-1 flex flex-col h-full bg-[#f8fafc] overflow-y-auto w-full custom-scrollbar">
       <header className="h-[72px] shrink-0 bg-white border-b border-slate-200 px-8 flex items-center shadow-sm z-10 sticky top-0">
-        <h1 className="text-xl font-bold tracking-tight text-slate-800">데이터 관리</h1>
+        <h1 className="text-xl font-bold tracking-tight text-slate-800">작품 관리 & 내보내기</h1>
       </header>
 
       <div className="p-8 max-w-4xl mx-auto w-full space-y-8">
@@ -126,10 +134,13 @@ export function ToolsPanel({ bible, episodes, setBible, setEpisodes }: ToolsPane
             </div>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="bg-slate-50 p-6 rounded-xl border border-slate-100">
-              <span className="text-sm font-semibold text-slate-500 block mb-1">총 누적 회차</span>
-              <span className="text-3xl font-black text-slate-800">{episodes.length} <span className="text-lg font-bold text-slate-400">화</span></span>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <div className="bg-slate-50 p-6 rounded-xl border border-slate-100 relative overflow-hidden">
+              <span className="text-sm font-semibold text-slate-500 block mb-1 relative z-10">총 누적 회차</span>
+              <span className="text-3xl font-black text-slate-800 relative z-10">{episodes.length} <span className="text-lg font-bold text-slate-400">화</span></span>
+              <div className="absolute right-[-20px] bottom-[-20px] opacity-5">
+                <FileType className="w-32 h-32" />
+              </div>
             </div>
             <div className="bg-slate-50 p-6 rounded-xl border border-slate-100">
               <span className="text-[13px] font-semibold text-slate-500 block mb-1">총 글자수 (공백 포함)</span>
@@ -142,6 +153,22 @@ export function ToolsPanel({ bible, episodes, setBible, setEpisodes }: ToolsPane
             <div className="bg-slate-50 p-6 rounded-xl border border-slate-100">
               <span className="text-[13px] font-semibold text-slate-500 block mb-1">회차당 평균 글자수</span>
               <span className="text-2xl font-black text-emerald-600">{avgCharacters.toLocaleString()} <span className="text-sm font-bold text-slate-400">자/화</span></span>
+            </div>
+          </div>
+
+          <div className="bg-indigo-50/50 rounded-xl border border-indigo-100 p-5">
+            <div className="flex justify-between items-end mb-2">
+              <div>
+                <span className="text-sm font-bold text-indigo-900 block mb-1">유료화 전환 목표 (15만자) 달성률</span>
+                <span className="text-xs text-indigo-600/80 font-medium">플랫폼 유료화의 평균 기준인 15만자까지 남은 분량입니다.</span>
+              </div>
+              <span className="text-xl font-black text-indigo-700">{progressPercent}%</span>
+            </div>
+            <div className="h-3 w-full bg-indigo-100 rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-indigo-600 rounded-full transition-all duration-1000 ease-out"
+                style={{ width: `${progressPercent}%` }}
+              ></div>
             </div>
           </div>
         </section>

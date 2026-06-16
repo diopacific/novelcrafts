@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { BibleState, Episode } from '../types';
 import { Button } from './ui/button';
 import { Textarea } from './ui/textarea';
-import { PenTool, CheckCircle2, ListFilter, Trash2, Edit3, Save, X, Plus, ChevronUp, ChevronDown, FileText, Search, Replace, BookOpen, Sparkles, Copy, Wand2 } from 'lucide-react';
+import { PenTool, CheckCircle2, ListFilter, Trash2, Edit3, Save, X, Plus, ChevronUp, ChevronDown, ChevronRight, FileText, Search, Replace, BookOpen, Sparkles, Copy, Wand2 } from 'lucide-react';
 import { useAuth } from '../AuthContext';
 
 interface WorkspaceProps {
@@ -18,6 +18,8 @@ export function Workspace({ bible, episodes, setEpisodes }: WorkspaceProps) {
   const [newDirection, setNewDirection] = useState('');
   const [newContent, setNewContent] = useState('');
   const [newSummary, setNewSummary] = useState('');
+  const [newAuthorNote, setNewAuthorNote] = useState('');
+  const [newStatus, setNewStatus] = useState<'draft' | 'revision' | 'completed'>('draft');
   
   // Search state
   const [searchTerm, setSearchTerm] = useState('');
@@ -30,11 +32,24 @@ export function Workspace({ bible, episodes, setEpisodes }: WorkspaceProps) {
     alert('본문이 클립보드에 복사되었습니다. 플랫폼에 붙여넣기 하세요!');
   };
 
+  const [collapsedEpisodes, setCollapsedEpisodes] = useState<Set<string>>(new Set());
+  
+  const toggleCollapse = (id: string) => {
+    setCollapsedEpisodes(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
   // Edit State
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editDirection, setEditDirection] = useState('');
   const [editContent, setEditContent] = useState('');
   const [editSummary, setEditSummary] = useState('');
+  const [editAuthorNote, setEditAuthorNote] = useState('');
+  const [editStatus, setEditStatus] = useState<'draft' | 'revision' | 'completed'>('draft');
 
   // Search & Replace State
   const [showSearchReplace, setShowSearchReplace] = useState(false);
@@ -79,13 +94,17 @@ export function Workspace({ bible, episodes, setEpisodes }: WorkspaceProps) {
       number: nextEpisodeNum,
       direction: newDirection.trim() || `제 ${nextEpisodeNum}화`,
       content: newContent,
-      summary: newSummary.trim() || '요약이 없습니다.'
+      summary: newSummary.trim() || '요약이 없습니다.',
+      authorNote: newAuthorNote.trim(),
+      status: newStatus
     };
 
     setEpisodes(prev => [...prev, newEpisode]);
     setNewDirection('');
     setNewContent('');
     setNewSummary('');
+    setNewAuthorNote('');
+    setNewStatus('draft');
   };
 
   const startEdit = (ep: Episode) => {
@@ -93,11 +112,20 @@ export function Workspace({ bible, episodes, setEpisodes }: WorkspaceProps) {
     setEditDirection(ep.direction);
     setEditContent(ep.content);
     setEditSummary(ep.summary);
+    setEditAuthorNote(ep.authorNote || '');
+    setEditStatus(ep.status || 'draft');
   };
 
   const saveEdit = (id: string) => {
     setEpisodes(prev => prev.map(ep => 
-      ep.id === id ? { ...ep, direction: editDirection, content: editContent, summary: editSummary } : ep
+      ep.id === id ? { 
+        ...ep, 
+        direction: editDirection, 
+        content: editContent, 
+        summary: editSummary,
+        authorNote: editAuthorNote,
+        status: editStatus
+      } : ep
     ));
     setEditingId(null);
   };
@@ -346,16 +374,30 @@ export function Workspace({ bible, episodes, setEpisodes }: WorkspaceProps) {
                 <div className="bg-slate-50 border-b border-slate-200 px-8 py-4 flex items-center justify-between">
                   <div className="flex items-center gap-4">
                     <h3 className="font-bold text-lg text-slate-800 flex items-center">
+                      <button 
+                        onClick={() => toggleCollapse(ep.id)} 
+                        className="mr-3 text-slate-400 hover:text-indigo-600 bg-slate-100/80 hover:bg-indigo-50 p-1 rounded-md transition-colors"
+                        title={collapsedEpisodes.has(ep.id) ? "펼치기" : "접기"}
+                      >
+                        {collapsedEpisodes.has(ep.id) ? <ChevronRight className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                      </button>
                       제 {ep.number} 화
-                      <span className="ml-4 text-xs font-semibold bg-indigo-100 text-indigo-700 px-2 py-1 rounded-full flex items-center">
+                      <span className="ml-4 text-xs font-semibold bg-indigo-100 text-indigo-700 px-2 py-1 rounded-md flex items-center">
                         <FileText className="w-3 h-3 mr-1" />
                         {ep.content.length.toLocaleString()} 자
                       </span>
+                      <span className={`ml-2 text-[11px] font-bold px-2 py-1 rounded-md border tracking-wide ${
+                        ep.status === 'completed' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' :
+                        ep.status === 'revision' ? 'bg-amber-50 text-amber-600 border-amber-200' :
+                        'bg-slate-50 text-slate-600 border-slate-200'
+                      }`}>
+                        {ep.status === 'completed' ? '완성' : ep.status === 'revision' ? '수정중' : '초고'}
+                      </span>
                     </h3>
                     {editingId !== ep.id && (
-                      <div className="flex items-center gap-1.5 text-slate-500 text-sm ml-2">
+                      <div className="flex items-center gap-1.5 text-slate-500 text-[13px] ml-2 font-medium">
                         <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                        <span className="font-medium text-emerald-600">클라우드 저장됨</span>
+                        클라우드 저장됨
                       </div>
                     )}
                   </div>
@@ -389,10 +431,13 @@ export function Workspace({ bible, episodes, setEpisodes }: WorkspaceProps) {
                            <ChevronDown className="w-4 h-4" />
                          </button>
                        </div>
+                       <Button variant="ghost" className="h-8 w-8 p-0 text-slate-400 hover:text-indigo-600 bg-white border border-slate-200 mr-2" onClick={() => toggleCollapse(ep.id)} title="펼치기/접기">
+                         {collapsedEpisodes.has(ep.id) ? <BookOpen className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
+                       </Button>
                        <Button variant="ghost" className="h-8 w-8 p-0 text-slate-400 hover:text-emerald-600 bg-white border border-slate-200 mr-2" onClick={() => copyToClipboard(ep.content)} title="본문 복사하기">
                          <Copy className="w-4 h-4" />
                        </Button>
-                       <Button variant="ghost" className="h-8 w-8 p-0 text-slate-400 hover:text-indigo-600 bg-white border border-slate-200" onClick={() => startEdit(ep)} title="회차 수정">
+                       <Button variant="ghost" className="h-8 w-8 p-0 text-slate-400 hover:text-indigo-600 bg-white border border-slate-200" onClick={() => { startEdit(ep); setCollapsedEpisodes(prev => { const n = new Set(prev); n.delete(ep.id); return n; }); }} title="회차 수정">
                          <Edit3 className="w-4 h-4" />
                        </Button>
                        <Button variant="ghost" className="h-8 w-8 p-0 text-slate-400 hover:text-red-500 bg-white border border-slate-200" onClick={() => deleteEpisode(ep.id)} title="단건 삭제">
@@ -402,6 +447,9 @@ export function Workspace({ bible, episodes, setEpisodes }: WorkspaceProps) {
                   )}
                 </div>
                 
+                {/* Content Area - Conditionally rendered based on collapse state */}
+                {(!collapsedEpisodes.has(ep.id) || editingId === ep.id) && (
+                  <>
                 {/* User Direction / Title */}
                 <div className="px-8 py-3.5 bg-indigo-50/50 border-b border-slate-100 border-l-4 border-l-indigo-400 flex flex-col justify-center">
                   <p className="text-[11px] font-bold text-indigo-800 tracking-wider mb-1 uppercase opacity-80">제목 또는 방향 메모</p>
@@ -451,22 +499,63 @@ export function Workspace({ bible, episodes, setEpisodes }: WorkspaceProps) {
                   )}
                 </div>
 
-                {/* Summary */}
-                <div className="bg-slate-50 px-8 py-5 border-t border-slate-100 flex items-start gap-4">
-                  <ListFilter className="w-5 h-5 text-slate-400 shrink-0 mt-0.5" />
-                  <div className="flex-1">
-                    <span className="text-[12px] font-bold text-slate-500 mb-1.5 block uppercase tracking-wide">이 회차 요약</span>
-                    {editingId === ep.id ? (
-                      <Textarea 
-                        className="h-20 text-[13px]"
-                        value={editSummary}
-                        onChange={(e) => setEditSummary(e.target.value)}
-                      />
-                    ) : (
-                      <p className="text-[14px] text-slate-600 leading-relaxed font-medium">{ep.summary}</p>
-                    )}
+                {/* Summary & Author Note */}
+                <div className="bg-slate-50 px-8 py-5 border-t border-slate-100 flex flex-col gap-4">
+                  <div className="flex items-start gap-4">
+                    <ListFilter className="w-5 h-5 text-slate-400 shrink-0 mt-0.5" />
+                    <div className="flex-1">
+                      <span className="text-[12px] font-bold text-slate-500 mb-1.5 block uppercase tracking-wide">이 회차 요약</span>
+                      {editingId === ep.id ? (
+                        <Textarea 
+                          className="h-20 text-[13px]"
+                          value={editSummary}
+                          onChange={(e) => setEditSummary(e.target.value)}
+                        />
+                      ) : (
+                        <p className="text-[14px] text-slate-600 leading-relaxed font-medium">{ep.summary}</p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-4">
+                    <PenTool className="w-5 h-5 text-indigo-400 shrink-0 mt-0.5" />
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-[12px] font-bold text-indigo-600 block uppercase tracking-wide">작가의 말 / 메모</span>
+                      </div>
+                      {editingId === ep.id ? (
+                        <div className="space-y-3">
+                          <Textarea 
+                            className="h-20 text-[13px] bg-white border-indigo-100 focus-visible:ring-indigo-500"
+                            placeholder="이 회차에 대한 메모나 작가의 말을 남겨주세요."
+                            value={editAuthorNote}
+                            onChange={(e) => setEditAuthorNote(e.target.value)}
+                          />
+                          <div className="flex items-center gap-3 bg-white p-3 border border-slate-200 rounded-lg">
+                            <span className="text-[13px] font-bold text-slate-700">현재 상태:</span>
+                            <select 
+                              className="text-[13px] font-medium border border-slate-200 rounded-md py-1.5 px-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-slate-50"
+                              value={editStatus}
+                              onChange={(e) => setEditStatus(e.target.value as 'draft' | 'revision' | 'completed')}
+                            >
+                              <option value="draft">초고</option>
+                              <option value="revision">수정중</option>
+                              <option value="completed">완성</option>
+                            </select>
+                          </div>
+                        </div>
+                      ) : (
+                        ep.authorNote ? (
+                          <p className="text-[13px] text-indigo-900/80 leading-relaxed font-medium bg-indigo-50/50 p-3 rounded-lg border border-indigo-100">{ep.authorNote}</p>
+                        ) : (
+                          <p className="text-[13px] text-slate-400 italic">메모 없음</p>
+                        )
+                      )}
+                    </div>
                   </div>
                 </div>
+                  </>
+                )}
               </div>
             ))
           )}
@@ -530,6 +619,37 @@ export function Workspace({ bible, episodes, setEpisodes }: WorkspaceProps) {
                   value={newSummary}
                   onChange={(e) => setNewSummary(e.target.value)}
                 />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+                <div className="space-y-3">
+                  <label className="block text-[14px] font-bold text-slate-800">
+                    작가의 말 / 메모 (선택사항)
+                  </label>
+                  <Textarea 
+                    placeholder="독자에게 남길 말, 혹은 나만 볼 창작 메모를 적어보세요."
+                    className="h-24 bg-slate-50 border-slate-200 focus-visible:bg-white text-[13px] leading-relaxed"
+                    value={newAuthorNote}
+                    onChange={(e) => setNewAuthorNote(e.target.value)}
+                  />
+                </div>
+                
+                <div className="space-y-3">
+                  <label className="block text-[14px] font-bold text-slate-800">
+                    회차 초안 상태
+                  </label>
+                  <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 h-24 flex items-center gap-4">
+                    <select 
+                      className="flex-1 text-[14px] font-medium border border-slate-200 rounded-lg py-2.5 px-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white shadow-sm"
+                      value={newStatus}
+                      onChange={(e) => setNewStatus(e.target.value as 'draft' | 'revision' | 'completed')}
+                    >
+                      <option value="draft">초고 (작성 중)</option>
+                      <option value="revision">수정중 (퇴고 필요)</option>
+                      <option value="completed">완성 (업로드 가능)</option>
+                    </select>
+                  </div>
+                </div>
               </div>
 
               <div className="flex justify-end pt-4 border-t border-slate-100">
