@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { BibleState, Episode } from '../types';
 import { Button } from './ui/button';
 import { Textarea } from './ui/textarea';
-import { PenTool, CheckCircle2, ListFilter, Trash2, Edit3, Save, X, Plus, ChevronUp, ChevronDown, ChevronRight, FileText, Search, Replace, BookOpen, Sparkles, Copy, Wand2 } from 'lucide-react';
+import { PenTool, CheckCircle2, ListFilter, Trash2, Edit3, Save, X, Plus, ChevronUp, ChevronDown, ChevronRight, FileText, Search, Replace, BookOpen, Sparkles, Copy, Wand2, Maximize2, Minimize2 } from 'lucide-react';
 import { useAuth } from '../AuthContext';
 
 interface WorkspaceProps {
@@ -20,6 +20,12 @@ export function Workspace({ bible, episodes, setEpisodes }: WorkspaceProps) {
   const [newSummary, setNewSummary] = useState('');
   const [newAuthorNote, setNewAuthorNote] = useState('');
   const [newStatus, setNewStatus] = useState<'draft' | 'revision' | 'completed'>('draft');
+  
+  // Initial states
+  const [statusFilter, setStatusFilter] = useState<'all' | 'draft' | 'revision' | 'completed'>('all');
+  
+  // Fullscreen Editor State
+  const [isFullscreen, setIsFullscreen] = useState(false);
   
   // Search state
   const [searchTerm, setSearchTerm] = useState('');
@@ -105,6 +111,7 @@ export function Workspace({ bible, episodes, setEpisodes }: WorkspaceProps) {
     setNewSummary('');
     setNewAuthorNote('');
     setNewStatus('draft');
+    setIsFullscreen(false);
   };
 
   const startEdit = (ep: Episode) => {
@@ -189,12 +196,18 @@ export function Workspace({ bible, episodes, setEpisodes }: WorkspaceProps) {
     return cleaned;
   };
 
-  const filteredEpisodes = useMemo(() => episodes.filter(ep => 
-    searchTerm === '' || 
-    ep.direction.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    ep.content.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    ep.summary.toLowerCase().includes(searchTerm.toLowerCase())
-  ), [episodes, searchTerm]);
+  const filteredEpisodes = useMemo(() => episodes.filter(ep => {
+    const matchesSearch = searchTerm === '' || 
+      ep.direction.toLowerCase().includes(searchTerm.toLowerCase()) || 
+      ep.content.toLowerCase().includes(searchTerm.toLowerCase()) || 
+      ep.summary.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = statusFilter === 'all' || ep.status === statusFilter;
+    return matchesSearch && matchesStatus;
+  }), [episodes, searchTerm, statusFilter]);
+
+  const totalCharacters = useMemo(() => episodes.reduce((acc, ep) => acc + ep.content.length, 0), [episodes]);
+  const MILESTONE_TARGET = 150000;
+  const progressPercent = useMemo(() => Math.min(100, Math.round((totalCharacters / MILESTONE_TARGET) * 100)), [totalCharacters]);
 
   return (
     <div className="flex-1 flex flex-col h-full bg-[#f8fafc] relative overflow-hidden">
@@ -206,6 +219,15 @@ export function Workspace({ bible, episodes, setEpisodes }: WorkspaceProps) {
           <p className="text-sm text-slate-500">다른 툴에서 집필한 원고를 보관하고 관리하세요.</p>
         </div>
         <div className="flex items-center gap-3">
+          <div className="flex flex-col items-end mr-4">
+            <span className="text-[11px] font-bold text-slate-500 mb-1">유료화 목표 달성률 ({progressPercent}%)</span>
+            <div className="w-32 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-gradient-to-r from-indigo-400 to-indigo-600 rounded-full"
+                style={{ width: `${progressPercent}%` }}
+              />
+            </div>
+          </div>
           <div className="relative">
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input 
@@ -261,6 +283,30 @@ export function Workspace({ bible, episodes, setEpisodes }: WorkspaceProps) {
         {/* Editor Area */}
         <div className="flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar scroll-smooth">
           <div className="max-w-4xl mx-auto space-y-8 md:space-y-12 pb-32">
+
+            {/* Sub Header for filter */}
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2 bg-white p-1 rounded-lg border border-slate-200 shadow-sm w-fit">
+                {(['all', 'draft', 'revision', 'completed'] as const).map((status) => (
+                  <button
+                    key={status}
+                    onClick={() => setStatusFilter(status)}
+                    className={`px-4 py-1.5 text-sm font-bold rounded-md transition-all ${
+                      statusFilter === status 
+                        ? (status === 'completed' ? 'bg-emerald-100 text-emerald-800' : 
+                           status === 'revision' ? 'bg-amber-100 text-amber-800' :
+                           status === 'draft' ? 'bg-slate-200 text-slate-800' :
+                           'bg-indigo-100 text-indigo-800')
+                        : 'text-slate-500 hover:bg-slate-50'
+                    }`}
+                  >
+                    {status === 'all' ? '전체 회차' : 
+                     status === 'draft' ? '초고' : 
+                     status === 'revision' ? '수정중' : '완성'}
+                  </button>
+                ))}
+              </div>
+            </div>
             
             {/* AI Prompt Banner */}
             {showPromptGenerator && (
@@ -386,11 +432,12 @@ export function Workspace({ bible, episodes, setEpisodes }: WorkspaceProps) {
                         <FileText className="w-3 h-3 mr-1" />
                         {ep.content.length.toLocaleString()} 자
                       </span>
-                      <span className={`ml-2 text-[11px] font-bold px-2 py-1 rounded-md border tracking-wide ${
+                      <span className={`ml-2 text-[11px] font-bold px-2 py-1 rounded-md border tracking-wide flex items-center ${
                         ep.status === 'completed' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' :
                         ep.status === 'revision' ? 'bg-amber-50 text-amber-600 border-amber-200' :
                         'bg-slate-50 text-slate-600 border-slate-200'
                       }`}>
+                        {ep.status === 'completed' ? <CheckCircle2 className="w-3 h-3 mr-1" /> : ep.status === 'revision' ? <Edit3 className="w-3 h-3 mr-1" /> : <PenTool className="w-3 h-3 mr-1" />}
                         {ep.status === 'completed' ? '완성' : ep.status === 'revision' ? '수정중' : '초고'}
                       </span>
                     </h3>
@@ -561,12 +608,19 @@ export function Workspace({ bible, episodes, setEpisodes }: WorkspaceProps) {
           )}
 
           {/* New Episode Input Form */}
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-[0_8px_30px_rgb(0,0,0,0.04)] overflow-hidden relative">
-            <div className="bg-slate-900 px-8 py-5 flex items-center justify-between shadow-sm">
-              <h3 className="font-bold text-lg text-white">제 {nextEpisodeNum} 화 업로드</h3>
+          <div className={`${isFullscreen ? 'fixed inset-0 z-50 bg-[#f8fafc] flex flex-col' : 'bg-white rounded-2xl border border-slate-200 shadow-[0_8px_30px_rgb(0,0,0,0.04)] overflow-hidden relative'}`}>
+            <div className={`px-8 py-5 flex items-center justify-between shadow-sm shrink-0 ${isFullscreen ? 'bg-white border-b border-slate-200' : 'bg-slate-900 border-b-0'}`}>
+              <h3 className={`font-bold text-lg ${isFullscreen ? 'text-slate-800' : 'text-white'}`}>제 {nextEpisodeNum} 화 업로드</h3>
+              <button 
+                onClick={() => setIsFullscreen(!isFullscreen)} 
+                className={`flex items-center justify-center p-2 rounded-lg transition-colors ${isFullscreen ? 'text-slate-500 hover:bg-slate-100' : 'text-slate-300 hover:text-white hover:bg-slate-800'}`}
+                title={isFullscreen ? "전체화면 종료" : "전체화면 (집중 모드)"}
+              >
+                {isFullscreen ? <Minimize2 className="w-5 h-5" /> : <Maximize2 className="w-5 h-5" />}
+              </button>
             </div>
             
-            <div className="p-8 space-y-6">
+            <div className={`p-8 space-y-6 ${isFullscreen ? 'flex-1 overflow-y-auto px-16 max-w-5xl mx-auto w-full' : ''}`}>
               <div className="space-y-3">
                 <label className="block text-[14px] font-bold text-slate-800">
                   제목 또는 핵심 메모 (선택사항)
@@ -603,7 +657,7 @@ export function Workspace({ bible, episodes, setEpisodes }: WorkspaceProps) {
                 </div>
                 <Textarea 
                   placeholder={`외부에서 집필하신 본문 내용을 이곳에 붙여넣기 하세요.`}
-                  className="h-64 bg-slate-50 border-slate-200 focus-visible:bg-white text-[15px] font-serif leading-relaxed"
+                  className={`${isFullscreen ? 'min-h-[500px] h-full' : 'h-80'} bg-slate-50 border-slate-200 focus-visible:bg-white text-[16px] font-serif leading-relaxed ${isFullscreen ? 'shadow-inner' : ''}`}
                   value={newContent}
                   onChange={(e) => setNewContent(e.target.value)}
                 />
