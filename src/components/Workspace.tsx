@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { BibleState, Episode } from '../types';
 import { Button } from './ui/button';
 import { Textarea } from './ui/textarea';
@@ -189,12 +189,12 @@ export function Workspace({ bible, episodes, setEpisodes }: WorkspaceProps) {
     return cleaned;
   };
 
-  const filteredEpisodes = episodes.filter(ep => 
+  const filteredEpisodes = useMemo(() => episodes.filter(ep => 
     searchTerm === '' || 
     ep.direction.toLowerCase().includes(searchTerm.toLowerCase()) || 
     ep.content.toLowerCase().includes(searchTerm.toLowerCase()) || 
     ep.summary.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  ), [episodes, searchTerm]);
 
   return (
     <div className="flex-1 flex flex-col h-full bg-[#f8fafc] relative overflow-hidden">

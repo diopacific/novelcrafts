@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useMemo } from 'react';
 import { BibleState, Episode } from '../types';
 import { Button } from './ui/button';
 import { Download, Upload, Trash2, Database, BarChart3, FileType } from 'lucide-react';
@@ -106,13 +106,13 @@ export function ToolsPanel({ bible, episodes, setBible, setEpisodes }: ToolsPane
     }
   };
 
-  const totalCharacters = episodes.reduce((acc, ep) => acc + ep.content.length, 0);
-  const totalCharactersNoSpaces = episodes.reduce((acc, ep) => acc + ep.content.replace(/\s/g, '').length, 0);
-  const avgCharacters = episodes.length > 0 ? Math.round(totalCharacters / episodes.length) : 0;
+  const totalCharacters = useMemo(() => episodes.reduce((acc, ep) => acc + ep.content.length, 0), [episodes]);
+  const totalCharactersNoSpaces = useMemo(() => episodes.reduce((acc, ep) => acc + ep.content.replace(/\s/g, '').length, 0), [episodes]);
+  const avgCharacters = useMemo(() => episodes.length > 0 ? Math.round(totalCharacters / episodes.length) : 0, [episodes.length, totalCharacters]);
   
   // 집필 목표 달성률 (유료화 기준: 약 15만자)
   const MILESTONE_TARGET = 150000;
-  const progressPercent = Math.min(100, Math.round((totalCharacters / MILESTONE_TARGET) * 100));
+  const progressPercent = useMemo(() => Math.min(100, Math.round((totalCharacters / MILESTONE_TARGET) * 100)), [totalCharacters]);
 
   return (
     <div className="flex-1 flex flex-col h-full bg-[#f8fafc] overflow-y-auto w-full custom-scrollbar">

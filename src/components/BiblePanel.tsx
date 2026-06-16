@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { BibleState } from '../types';
 import { Button } from './ui/button';
 import { Textarea } from './ui/textarea';
@@ -71,7 +71,7 @@ export function BiblePanel({ bible, setBible }: BiblePanelProps) {
     }
   };
 
-  const tabs = [
+  const tabs = useMemo(() => [
     { id: 'logline', label: '핵심/로그라인', description: '제목, 장르, 로그라인, 기대효과', icon: <Zap className="w-5 h-5" /> },
     { id: 'story', label: '스토리', description: '기승전결 및 핵심 시놉시스', icon: <Book className="w-5 h-5" /> },
     { id: 'system', label: '능력', description: '치트, 무공, 마법, 특수 체질', icon: <Swords className="w-5 h-5" /> },
@@ -79,7 +79,9 @@ export function BiblePanel({ bible, setBible }: BiblePanelProps) {
     { id: 'villain', label: '빌런', description: '최종 보스, 적대 세력', icon: <Skull className="w-5 h-5" /> },
     { id: 'structure', label: '집필지침', description: '어조, 문체, 주의사항', icon: <LayoutTemplate className="w-5 h-5" /> },
     { id: 'episode', label: '에피소드', description: '주요 사건과 회차별 개요', icon: <Map className="w-5 h-5" /> },
-  ] as const;
+  ], []);
+
+  const currentTabInfo = useMemo(() => tabs.find(t => t.id === activeTab), [tabs, activeTab]);
 
   return (
     <div className="flex-1 flex w-full h-full bg-white overflow-hidden">
@@ -125,11 +127,11 @@ export function BiblePanel({ bible, setBible }: BiblePanelProps) {
         <header className="h-[72px] shrink-0 border-b border-slate-100 flex items-center justify-between px-8 bg-white/80 backdrop-blur top-0 sticky z-10">
            <div className="flex items-center gap-3">
              <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center border border-indigo-100">
-               {tabs.find(t => t.id === activeTab)?.icon}
+               {currentTabInfo?.icon}
              </div>
              <div>
                <h2 className="text-lg font-bold text-slate-800">
-                 {tabs.find(t => t.id === activeTab)?.label}
+                 {currentTabInfo?.label}
                </h2>
              </div>
            </div>
