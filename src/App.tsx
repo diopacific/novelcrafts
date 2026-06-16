@@ -24,8 +24,16 @@ function AppContent() {
         if (e?.code === 'auth/cancelled-popup-request' || e?.code === 'auth/popup-closed-by-user') {
           return;
         }
+        if (e?.code === 'auth/unauthorized-domain') {
+          // Alert is handled in firebase.ts
+          return;
+        }
+        if (e?.code === 'auth/popup-blocked' || e?.code === 'auth/popup-closed-by-user' || e?.code === 'auth/web-storage-unsupported' || e?.message?.toLowerCase().includes('popup')) {
+          // This should never be reached here because firebase.ts handles it with redirect.
+          return;
+        }
         console.error('Login failed', e);
-        alert(`로그인에 실패했습니다.\n팝업 차단 여부를 확인하거나 권한을 허용해주세요.`);
+        alert(`인증 시스템 연결에 실패했습니다.\n사파리나 모바일 브라우저의 경우 '크로스 사이트 추적 방지(서드파티 쿠키 차단)' 설정이 원인일 수 있습니다.\n\n오류: ${e.message}`);
       }
       return;
     }
@@ -90,7 +98,9 @@ function AppContent() {
                   await login();
                 } catch (e: any) {
                   if (e?.code === 'auth/cancelled-popup-request' || e?.code === 'auth/popup-closed-by-user') return;
-                  alert('로그인에 실패했습니다.');
+                  if (e?.code === 'auth/unauthorized-domain') return;
+                  if (e?.code === 'auth/popup-blocked' || e?.code === 'auth/popup-closed-by-user' || e?.code === 'auth/web-storage-unsupported' || e?.message?.toLowerCase().includes('popup')) return;
+                  alert(`인증 시스템 연결에 실패했습니다.\n사파리나 모바일 브라우저의 경우 '크로스 사이트 추적 방지(서드파티 쿠키 차단)' 설정이 원인일 수 있습니다.\n\n오류: ${e.message}`);
                 }
               }}
               className="flex items-center bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-1.5 rounded-md transition-colors text-sm font-bold"

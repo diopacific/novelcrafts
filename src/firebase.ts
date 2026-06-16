@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth';
+import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut } from 'firebase/auth';
 import { getFirestore, doc, getDocFromServer } from 'firebase/firestore';
 import firebaseConfig from '../firebase-applet-config.json';
 
@@ -19,6 +19,11 @@ const app = initializeApp(activeConfig);
 export const db = getFirestore(app, activeConfig.firestoreDatabaseId); // CRITICAL
 export const auth = getAuth();
 
+// Check for pending redirect results on load
+getRedirectResult(auth).catch((error) => {
+  console.error("Redirect connection error:", error);
+});
+
 export async function loginWithGoogle() {
   const provider = new GoogleAuthProvider();
   provider.setCustomParameters({
@@ -26,15 +31,22 @@ export async function loginWithGoogle() {
   });
   
   try {
+    // 1st attempt: Popup (Works best on Chrome / Desktop)
     return await signInWithPopup(auth, provider);
   } catch (error: any) {
     if (error.code === 'auth/unauthorized-domain') {
       const currentDomain = window.location.hostname;
       alert(`[통신 차단됨] 현재 도메인(${currentDomain})이 Firebase에 등록되지 않았습니다.\n\n해결 방법:\n1. 파이어베이스 콘솔(Firebase Console) 접속\n2. Authentication(인증) -> Settings(설정) -> Authorized domains(승인된 도메인) 이동\n3. '${currentDomain}' 를 추가해주세요.`);
       throw error;
-    } else if (error.code === 'auth/popup-blocked' || error.code === 'auth/popup-closed-by-user') {
-      alert("팝업이 차단되었거나 닫혔습니다. 로그인 창이 뜨지 않는다면 팝업 차단을 해제해주세요.");
-      throw error;
+    } else if (
+      error.code === 'auth/popup-blocked' || 
+      error.code === 'auth/popup-closed-by-user' || 
+      error.code === 'auth/web-storage-unsupported' ||
+      error.message?.toLowerCase().includes('popup')
+    ) {
+      // 2nd attempt: Redirect fallback for Safari, iOS, In-App browsers, and strict popup blockers
+      console.warn("Popup blocked, closed, or third-party cookies disabled. Falling back to redirect...");
+      await signInWithRedirect(auth, provider);
     } else {
       console.error("Login failed", error);
       throw error;
