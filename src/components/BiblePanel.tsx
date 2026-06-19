@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { BibleState } from '../types';
+import { BibleState, CustomBibleTab } from '../types';
 import { Button } from './ui/button';
 import { Textarea } from './ui/textarea';
 import { CharacterGraph } from './CharacterGraph';
-import { Book, Users, Map, Swords, Skull, LayoutTemplate, Save, Cloud, Loader2, Zap, Copy, FilePlus, Lightbulb, CheckCircle2 } from 'lucide-react';
+import { Book, Users, Map, Swords, Skull, LayoutTemplate, Save, Cloud, Loader2, Zap, Copy, FilePlus, Lightbulb, CheckCircle2, Plus, Trash2, Edit2, Check, X, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 interface BiblePanelProps {
@@ -11,9 +11,9 @@ interface BiblePanelProps {
   setBible: (bible: BibleState) => void;
 }
 
-type Tab = keyof BibleState;
+type Tab = string;
 
-const TAB_TIPS: Record<Tab, { title: string; items: string[] }> = {
+const TAB_TIPS: Record<string, { title: string; items: string[] }> = {
   logline: {
     title: "로그라인 작성 팁",
     items: [
@@ -83,6 +83,10 @@ const TAB_TIPS: Record<Tab, { title: string; items: string[] }> = {
 export function BiblePanel({ bible, setBible }: BiblePanelProps) {
   const [activeTab, setActiveTab] = useState<Tab>('story');
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
+  const [isAddingTab, setIsAddingTab] = useState(false);
+  const [newTabLabel, setNewTabLabel] = useState('');
+  const [editingTabId, setEditingTabId] = useState<string | null>(null);
+  const [editTabLabel, setEditTabLabel] = useState('');
 
   // To debounce the save to Cloud database
   useEffect(() => {
@@ -94,8 +98,22 @@ export function BiblePanel({ bible, setBible }: BiblePanelProps) {
     return () => clearTimeout(timer);
   }, [bible]);
 
-  const updateField = (field: keyof BibleState, value: string) => {
-    setBible({ ...bible, [field]: value });
+  const updateField = (field: string, value: string) => {
+    if (field.startsWith('custom_')) {
+      const updatedTabs = (bible.customTabs || []).map(t => 
+        t.id === field ? { ...t, content: value } : t
+      );
+      setBible({ ...bible, customTabs: updatedTabs });
+    } else {
+      setBible({ ...bible, [field as keyof BibleState]: value });
+    }
+  };
+
+  const getFieldValue = (field: string): string => {
+    if (field.startsWith('custom_')) {
+      return (bible.customTabs || []).find(t => t.id === field)?.content || '';
+    }
+    return (bible[field as keyof BibleState] as string) || '';
   };
 
   const insertTemplate = () => {
@@ -122,24 +140,59 @@ export function BiblePanel({ bible, setBible }: BiblePanelProps) {
         case 'episode':
             template = "■ [진행 중] 에피소드 개요\n- 메인 목표: \n- 주요 사건: \n- 얻게 되는 보상/카타르시스: \n\n■ 회차별 트리트먼트\n1화: \n2화: \n3화: \n";
             break;
+        default:
+            template = "■ 새로운 설정 항목\n- \n";
+            break;
     }
     
     // Append or replace? Append with newlines if content exists.
-    const currentText = bible[activeTab];
+    const currentText = getFieldValue(activeTab);
     const newText = currentText ? currentText + "\n\n" + template : template;
     updateField(activeTab, newText);
   };
 
   const copyToClipboard = async () => {
     try {
-      await navigator.clipboard.writeText(bible[activeTab]);
+      await navigator.clipboard.writeText(getFieldValue(activeTab));
       alert('현재 탭의 내용이 클립보드에 복사되었습니다.');
     } catch (err) {
       alert('복사에 실패했습니다.');
     }
   };
 
-  const tabs = useMemo(() => [
+  const addCustomTab = () => {
+    if (!newTabLabel.trim()) return;
+    const newTab: CustomBibleTab = {
+      id: `custom_${Date.now()}`,
+      label: newTabLabel.trim(),
+      content: ''
+    };
+    setBible({ ...bible, customTabs: [...(bible.customTabs || []), newTab] });
+    setNewTabLabel('');
+    setIsAddingTab(false);
+    setActiveTab(newTab.id);
+  };
+
+  const deleteCustomTab = (id: string) => {
+    if (confirm('이 커스텀 탭을 삭제하시겠습니까? 기록된 내용은 모두 사라집니다.')) {
+      const updatedTabs = (bible.customTabs || []).filter(t => t.id !== id);
+      setBible({ ...bible, customTabs: updatedTabs });
+      if (activeTab === id) {
+        setActiveTab('story');
+      }
+    }
+  };
+
+  const saveEditTab = () => {
+    if (!editingTabId || !editTabLabel.trim()) return;
+    const updatedTabs = (bible.customTabs || []).map(t => 
+      t.id === editingTabId ? { ...t, label: editTabLabel.trim() } : t
+    );
+    setBible({ ...bible, customTabs: updatedTabs });
+    setEditingTabId(null);
+  };
+
+  const baseTabs = useMemo(() => [
     { id: 'logline', label: '핵심/로그라인', description: '제목, 장르, 로그라인, 기대효과', icon: <Zap className="w-5 h-5" /> },
     { id: 'story', label: '스토리', description: '기승전결 및 핵심 시놉시스', icon: <Book className="w-5 h-5" /> },
     { id: 'system', label: '능력', description: '치트, 무공, 마법, 특수 체질', icon: <Swords className="w-5 h-5" /> },
@@ -149,50 +202,114 @@ export function BiblePanel({ bible, setBible }: BiblePanelProps) {
     { id: 'episode', label: '에피소드', description: '주요 사건과 회차별 개요', icon: <Map className="w-5 h-5" /> },
   ], []);
 
-  const currentTabInfo = useMemo(() => tabs.find(t => t.id === activeTab), [tabs, activeTab]);
+  const allTabs = useMemo(() => {
+    const custom = (bible.customTabs || []).map(t => ({
+      id: t.id,
+      label: t.label,
+      description: '커스텀 설정 항목',
+      icon: <Book className="w-5 h-5" />,
+      isCustom: true
+    }));
+    return [...baseTabs, ...custom];
+  }, [baseTabs, bible.customTabs]);
+
+
+  const currentTabInfo = useMemo(() => allTabs.find(t => t.id === activeTab), [allTabs, activeTab]);
 
   return (
     <div className="flex-1 flex w-full h-full bg-white overflow-hidden">
       
       {/* Left Sidebar for Tabs */}
-      <div className="w-80 bg-slate-50 border-r border-slate-200 flex flex-col shrink-0">
-        <div className="p-8 pb-6 text-left">
+      <div className="w-80 bg-slate-50 border-r border-slate-200 flex flex-col shrink-0 relative">
+        <div className="p-8 pb-4 text-left border-b border-slate-200/60 bg-slate-50 sticky top-0 z-10">
           <h1 className="text-xl font-bold text-slate-800 tracking-tight">설정 공장</h1>
           <p className="text-[13px] text-slate-500 mt-2 font-medium leading-relaxed">
-            원고 작성에 필요한 핵심 설정들을 기록하고 클라우드에 안전하게 보관하세요.
+            원고 작성에 필요한 설정들을 기록하고 클라우드에 안전하게 보관하세요.
           </p>
+          <Button 
+            onClick={() => setIsAddingTab(true)} 
+            className="w-full mt-4 bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 font-bold shadow-sm"
+          >
+            <Plus className="w-4 h-4 mr-2 text-slate-500" /> 커스텀 설정 탭 추가
+          </Button>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-4 pb-8 space-y-1">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id as Tab)}
-              className={`w-full text-left p-4 rounded-xl transition-all flex items-start gap-4 ${
-                activeTab === tab.id 
-                ? 'bg-white text-indigo-600 shadow-md ring-1 ring-slate-200/50' 
-                : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100/50'
-              }`}
-            >
-              <div className={`mt-0.5 ${activeTab === tab.id ? 'text-indigo-500' : 'text-slate-400'}`}>
-                {tab.icon}
-              </div>
-              <div className="flex-1">
-                <div className="flex items-center justify-between mb-1">
-                  <span className={`block font-bold text-[15px] ${activeTab === tab.id ? 'text-indigo-700' : 'text-slate-700'}`}>
-                    {tab.label}
-                  </span>
-                  {bible[tab.id as Tab]?.trim().length > 0 && (
-                    <span className="shrink-0 bg-indigo-50 border border-indigo-100/50 text-indigo-600 text-[10px] font-bold px-1.5 py-0.5 rounded flex items-center gap-1">
-                      <CheckCircle2 className="w-3 h-3" /> 작 성
-                    </span>
-                  )}
+        <div className="flex-1 overflow-y-auto px-4 py-4 space-y-1 custom-scrollbar">
+          {isAddingTab && (
+            <div className="p-3 mb-2 bg-indigo-50 border border-indigo-100 rounded-xl flex items-center gap-2">
+              <input 
+                type="text" 
+                placeholder="새로운 탭 이름" 
+                className="w-full text-sm px-2 py-1.5 rounded bg-white border border-indigo-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                value={newTabLabel}
+                onChange={e => setNewTabLabel(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') addCustomTab(); else if (e.key === 'Escape') setIsAddingTab(false); }}
+                autoFocus
+              />
+              <button onClick={addCustomTab} className="p-1.5 bg-indigo-600 text-white rounded hover:bg-indigo-700">
+                <Check className="w-4 h-4" />
+              </button>
+              <button onClick={() => setIsAddingTab(false)} className="p-1.5 bg-white text-slate-400 border border-slate-200 rounded hover:bg-slate-50">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+
+          {allTabs.map((tab) => (
+            <div key={tab.id} className="relative group">
+              <button
+                onClick={() => setActiveTab(tab.id)}
+                className={`w-full text-left p-4 rounded-xl transition-all flex items-start gap-4 ${
+                  activeTab === tab.id 
+                  ? 'bg-white text-indigo-600 shadow-md ring-1 ring-slate-200/50' 
+                  : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100/50'
+                }`}
+              >
+                <div className={`mt-0.5 ${activeTab === tab.id ? 'text-indigo-500' : 'text-slate-400'}`}>
+                  {tab.icon}
                 </div>
-                <span className={`block text-[13px] font-medium leading-snug ${activeTab === tab.id ? 'text-indigo-600/70' : 'text-slate-500'}`}>
-                  {tab.description}
-                </span>
-              </div>
-            </button>
+                <div className="flex-1 overflow-hidden">
+                  <div className="flex items-center justify-between mb-1">
+                    {editingTabId === tab.id ? (
+                      <div className="flex items-center gap-1 w-full mr-2" onClick={e => e.stopPropagation()}>
+                        <input 
+                          type="text" 
+                          className="w-full text-[14px] px-1 py-0.5 rounded border border-indigo-300 focus:outline-none focus:ring-1 focus:ring-indigo-500 text-slate-800 font-bold"
+                          value={editTabLabel}
+                          onChange={e => setEditTabLabel(e.target.value)}
+                          onKeyDown={e => { if (e.key === 'Enter') saveEditTab(); else if (e.key === 'Escape') setEditingTabId(null); }}
+                          autoFocus
+                        />
+                        <button onClick={saveEditTab} className="text-indigo-600 hover:text-indigo-800 p-0.5"><Check className="w-3.5 h-3.5" /></button>
+                      </div>
+                    ) : (
+                      <span className={`block font-bold text-[15px] truncate pr-2 ${activeTab === tab.id ? 'text-indigo-700' : 'text-slate-700'}`}>
+                        {tab.label}
+                      </span>
+                    )}
+                    {getFieldValue(tab.id).trim().length > 0 && !editingTabId && (
+                      <span className="shrink-0 bg-indigo-50 border border-indigo-100/50 text-indigo-600 text-[10px] font-bold px-1.5 py-0.5 rounded flex items-center gap-1">
+                        <CheckCircle2 className="w-3 h-3" /> 작 성
+                      </span>
+                    )}
+                  </div>
+                  <span className={`block text-[13px] font-medium leading-snug truncate pr-6 ${activeTab === tab.id ? 'text-indigo-600/70' : 'text-slate-500'}`}>
+                    {tab.description}
+                  </span>
+                </div>
+              </button>
+              
+              {'isCustom' in tab && tab.isCustom && activeTab === tab.id && !editingTabId && (
+                <div className="absolute right-2 top-11 flex items-center gap-1">
+                  <button onClick={(e) => { e.stopPropagation(); setEditingTabId(tab.id); setEditTabLabel(tab.label); }} className="p-1 text-slate-300 hover:text-indigo-500 transition-colors" title="이름 변경">
+                    <Edit2 className="w-3 h-3" />
+                  </button>
+                  <button onClick={(e) => { e.stopPropagation(); deleteCustomTab(tab.id); }} className="p-1 text-slate-300 hover:text-red-500 transition-colors" title="삭제">
+                    <Trash2 className="w-3 h-3" />
+                  </button>
+                </div>
+              )}
+            </div>
           ))}
         </div>
       </div>
@@ -216,7 +333,7 @@ export function BiblePanel({ bible, setBible }: BiblePanelProps) {
              <div className="flex items-center gap-4">
                {/* Text Stats */}
                <div className="hidden lg:flex items-center gap-1.5 text-xs font-semibold bg-slate-100 text-slate-600 px-3 py-1.5 rounded-md">
-                 <span>공백포함: {bible[activeTab].length.toLocaleString()}자</span>
+                 <span>공백포함: {getFieldValue(activeTab).length.toLocaleString()}자</span>
                </div>
 
                {/* Cloud Sync Status */}
@@ -266,15 +383,23 @@ export function BiblePanel({ bible, setBible }: BiblePanelProps) {
                     <Textarea 
                       className="flex-1 min-h-[300px] text-[15px] leading-relaxed font-medium bg-white focus-visible:bg-white border-slate-200 shadow-sm resize-none rounded-xl p-8 placeholder:text-slate-300"
                       placeholder={"• [주인공] (이름, 외양, 결핍, 성격, 행동 원리, 전투 스펙, 치트 능력)\n• [주요 조력자/동료] (이름, 능력, 주인공과의 관계)\n• [실시간 관계도 시각화]\n텍스트에 'A -> B : 관계' 또는 '이름: A' 형식으로 작성하면 하단에 노드 관계도가 실시간으로 생성됩니다."}
-                      value={bible[activeTab]}
+                      value={getFieldValue(activeTab)}
                       onChange={(e) => updateField(activeTab, e.target.value)}
                     />
-                    <div className="h-[400px] shrink-0 flex flex-col mt-2">
-                      <h3 className="text-sm font-bold text-slate-700 mb-3 ml-1 flex items-center gap-2">
-                        <Users className="w-4 h-4 text-indigo-500" />
-                        실시간 인물 관계도
-                      </h3>
-                      <CharacterGraph text={bible.character} />
+                    <div className="h-[350px] shrink-0 flex flex-col mt-4 bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm relative">
+                      <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px] opacity-30"></div>
+                      <div className="px-5 py-3 border-b border-slate-100 bg-slate-50/80 flex justify-between items-center relative z-10">
+                        <h3 className="text-[13px] font-bold text-slate-700 flex items-center gap-2">
+                          <Users className="w-4 h-4 text-indigo-500" />
+                          실시간 인물 노드 관계도
+                        </h3>
+                        <span className="text-[11px] text-slate-400 font-medium bg-slate-100/50 px-2 py-0.5 rounded border border-slate-200/50">
+                          ( A {"->"} B : 관계 ) 형식으로 시각화됩니다
+                        </span>
+                      </div>
+                      <div className="flex-1 relative z-10">
+                        <CharacterGraph text={getFieldValue(activeTab)} />
+                      </div>
                     </div>
                   </div>
                 ) : (
@@ -288,7 +413,7 @@ export function BiblePanel({ bible, setBible }: BiblePanelProps) {
                       activeTab === 'structure' ? "• [어조 및 문체] (예: 가독성을 최우선으로, 짧고 간결한 문장, 웹소설식 엔터키 활용)\n• [전개 속도] (예: 지루한 설명은 빼고 대사와 행동 위주로)\n• [시점] (예: 1인칭 주인공 시점, 독백과 내면 심리 적극 활용)\n• [클리프행어/회차 끊기 규칙]" :
                       "• [현재 진행 중인 에피소드 목표]\n• [이 회차의 주요 사건 및 갈등]\n• [주인공이 얻게 되는 보상 혹은 깨달음]\n• [회차별 전개 개요 자유 작성]"
                     }
-                    value={bible[activeTab]}
+                    value={getFieldValue(activeTab)}
                     onChange={(e) => updateField(activeTab, e.target.value)}
                   />
                 )}
@@ -319,10 +444,14 @@ export function BiblePanel({ bible, setBible }: BiblePanelProps) {
               >
                 <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
                   <h3 className="text-[14px] font-bold text-slate-800 mb-4 flex items-center gap-2">
-                    {TAB_TIPS[activeTab].title}
+                    {TAB_TIPS[activeTab]?.title || "커스텀 설정 팁"}
                   </h3>
                   <ul className="space-y-4">
-                    {TAB_TIPS[activeTab].items.map((item, idx) => (
+                    {(TAB_TIPS[activeTab]?.items || [
+                      "새로운 설정에 대한 자유로운 아이디어를 적어보세요.",
+                      "필요하다면 상단 툴바의 '템플릿 채우기' 버튼으로 기본 뼈대를 잡을 수 있습니다.",
+                      "여러 탭을 나누어 방대한 세계관이나 설정을 체계적으로 보관하세요."
+                    ]).map((item, idx) => (
                       <li key={idx} className="text-[13px] text-slate-600 leading-relaxed flex items-start gap-2.5">
                         <span className="w-5 h-5 rounded-full bg-indigo-50 text-indigo-600 text-[10px] font-black flex items-center justify-center shrink-0 mt-0.5">
                           {idx + 1}
@@ -333,10 +462,27 @@ export function BiblePanel({ bible, setBible }: BiblePanelProps) {
                   </ul>
                 </div>
 
-                <div className="mt-6 bg-slate-100 rounded-lg p-4 relative overflow-hidden">
-                  <div className="absolute top-0 left-0 w-1 h-full bg-slate-300"></div>
-                  <h4 className="text-[12px] font-bold text-slate-600 mb-1">AI 자동 완성 제안</h4>
-                  <p className="text-[12px] text-slate-500 leading-relaxed">상단 툴바의 '템플릿 채우기' 버튼을 활용하면 기본 양식을 자동으로 생성할 수 있습니다.</p>
+                <div className="mt-6 bg-gradient-to-br from-indigo-50 to-blue-50 border border-indigo-100/50 rounded-xl p-5 relative overflow-hidden shadow-sm">
+                  <div className="absolute top-0 right-0 p-3 opacity-10">
+                    <Sparkles className="w-16 h-16" />
+                  </div>
+                  <h4 className="flex items-center gap-1.5 text-[13px] font-bold text-indigo-800 mb-2">
+                    <Sparkles className="w-4 h-4" /> AI 어시스턴트 활용
+                  </h4>
+                  <p className="text-[12px] text-slate-600 leading-relaxed mb-4 relative z-10">
+                    현재까지 작성된 바이블 설정을 바탕으로, AI에게 던질 프롬프트를 복사하여 기획안을 확장하거나 시놉시스를 보강해 보세요. 외부 AI 툴(ChatGPT, Claude 등)에 바로 붙여넣어 사용할 수 있습니다.
+                  </p>
+                  <Button 
+                    onClick={() => {
+                      const baseBible = `\n[현재 작성된 설정 바이블]\n- 탭 이름: ${currentTabInfo?.label}\n- 작성 내용:\n${getFieldValue(activeTab)}\n`;
+                      const prompt = `웹소설 작가의 입장에서 다음 설정 내용을 기획하고 있어.\n${baseBible}\n\n이 내용을 바탕으로 [소설 설정 및 시놉시스 빌딩 모드]에 맞추어 내용을 구체화하고, 독자에게 매력적으로 보일 수 있도록 살을 붙여서 아이디어를 3가지 정도 제안해줘. (웹소설 트렌드에 맞는 아이디어로 상세하게)`;
+                      navigator.clipboard.writeText(prompt);
+                      alert('AI 기획 프롬프트가 클립보드에 복사되었습니다! 외부 AI에 붙여넣기 하세요.');
+                    }}
+                    className="w-full bg-white text-indigo-600 hover:bg-white/80 border border-indigo-200 shadow-sm text-xs font-bold py-2 h-auto relative z-10"
+                  >
+                    현재 탭 기반 AI 프롬프트 복사
+                  </Button>
                 </div>
               </motion.div>
             </AnimatePresence>

@@ -1,3 +1,9 @@
+export interface CustomBibleTab {
+  id: string;
+  label: string;
+  content: string;
+}
+
 export interface BibleState {
   logline: string;
   story: string;
@@ -7,6 +13,7 @@ export interface BibleState {
   villain: string;
   structure: string;
   episode: string;
+  customTabs?: CustomBibleTab[];
 }
 
 export interface Episode {

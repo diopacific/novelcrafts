@@ -57,7 +57,8 @@ export function useDbStorage() {
             character: data.character || '',
             villain: data.villain || '',
             structure: data.structure || '',
-            episode: data.episode || ''
+            episode: data.episode || '',
+            customTabs: data.customTabs || []
           });
         }
 
@@ -113,6 +114,7 @@ export function useDbStorage() {
           villain: resolvedState.villain || '',
           structure: resolvedState.structure || '',
           episode: resolvedState.episode || '',
+          customTabs: resolvedState.customTabs || [],
           ownerId: user.uid,
           updatedAt: serverTimestamp()
         });

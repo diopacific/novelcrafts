@@ -176,17 +176,17 @@ export function CharacterGraph({ text }: CharacterGraphProps) {
 
   if (nodes.length === 0) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center text-slate-400 bg-slate-50/50 rounded-xl border border-slate-200">
+      <div className="flex-1 w-full h-full flex flex-col items-center justify-center text-slate-400 bg-transparent">
         <p className="text-[13px] font-medium">관계도 데이터가 없습니다.</p>
-        <p className="text-[12px] mt-1">입력창에 "A -&gt; B : 관계" 형식으로 작성하면 실시간 렌더링됩니다.</p>
+        <p className="text-[12px] mt-1">본문에 "A -&gt; B : 관계" 형식으로 작성하면 시각화됩니다.</p>
       </div>
     );
   }
 
   return (
-    <div className="flex-1 h-full relative border border-slate-200 rounded-xl overflow-hidden bg-[#fafafa]" ref={containerRef}>
+    <div className="w-full h-full relative bg-transparent" ref={containerRef}>
       <svg ref={svgRef} className="w-full h-full" />
-      <div className="absolute top-3 left-3 bg-white/80 p-2 rounded-lg border border-slate-200 text-[11px] font-semibold text-slate-500 shadow-sm">
+      <div className="absolute bottom-3 right-3 text-[10px] font-bold text-slate-400/80 pointer-events-none">
         Drag to move nodes
       </div>
     </div>
