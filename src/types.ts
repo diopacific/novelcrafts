@@ -9,8 +9,10 @@ export interface BibleState {
   story: string;
   world: string;
   system: string;
+  item: string;
   character: string;
   villain: string;
+  timeline: string;
   structure: string;
   episode: string;
   customTabs?: CustomBibleTab[];

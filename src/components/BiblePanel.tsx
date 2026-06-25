@@ -3,7 +3,7 @@ import { BibleState, CustomBibleTab } from '../types';
 import { Button } from './ui/button';
 import { Textarea } from './ui/textarea';
 import { CharacterGraph } from './CharacterGraph';
-import { Book, Users, Map, Swords, Skull, LayoutTemplate, Save, Cloud, Loader2, Zap, Copy, FilePlus, Lightbulb, CheckCircle2, Plus, Trash2, Edit2, Check, X, Sparkles } from 'lucide-react';
+import { Book, Users, Map, Swords, Skull, LayoutTemplate, Save, Cloud, Loader2, Zap, Copy, FilePlus, Lightbulb, CheckCircle2, Plus, Trash2, Edit2, Check, X, Sparkles, Globe, Package, Clock, PanelRightClose, PanelRightOpen } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 interface BiblePanelProps {
@@ -62,6 +62,22 @@ const TAB_TIPS: Record<string, { title: string; items: string[] }> = {
       "주인공의 성장에 맞춰 계단식으로 등장할 수 있도록 세력화/연결성을 부여하세요."
     ]
   },
+  item: {
+    title: "아이템/아티팩트 팁",
+    items: [
+      "각 아이템의 획득 난이도와 그에 걸맞은 가치를 부여하세요.",
+      "아이템이 주인공의 능력을 어떻게 보완하거나 증폭시키는지 명시하세요.",
+      "오버밸런스를 막기 위한 사용 조건이나 페널티를 추가하면 스토리에 긴장감이 생깁니다."
+    ]
+  },
+  timeline: {
+    title: "연표/타임라인 팁",
+    items: [
+      "과거의 중요한 역사적 사건이나 전쟁 등을 순서대로 기록하세요.",
+      "주인공의 성장 과정이나 주요 에피소드의 시간적 흐름을 정리하세요.",
+      "시간선에 따른 떡밥 회수나 복선을 계획할 때 유용합니다."
+    ]
+  },
   structure: {
     title: "집필 지침 팁",
     items: [
@@ -87,6 +103,7 @@ export function BiblePanel({ bible, setBible }: BiblePanelProps) {
   const [newTabLabel, setNewTabLabel] = useState('');
   const [editingTabId, setEditingTabId] = useState<string | null>(null);
   const [editTabLabel, setEditTabLabel] = useState('');
+  const [showTips, setShowTips] = useState(true);
 
   // To debounce the save to Cloud database
   useEffect(() => {
@@ -127,6 +144,15 @@ export function BiblePanel({ bible, setBible }: BiblePanelProps) {
             break;
         case 'system':
             template = "■ 주인공의 고유 능력 (치트)\n- \n\n■ 파워 밸런스 / 성장의 척도\n- \n\n■ 세계관 특수 설정 (마법/무공/상태창)\n- \n\n■ 패널티 / 한계점\n- \n";
+            break;
+        case 'world':
+            template = "■ 주요 배경/장소\n- \n\n■ 세계관 고유 규칙/상식\n- \n\n■ 주요 세력 및 조직\n- \n";
+            break;
+        case 'item':
+            template = "■ 핵심 아이템/아티팩트\n- 이름: \n- 등급/가치: \n- 획득 조건: \n- 능력 및 효과: \n- 페널티: \n\n■ 주요 장비 목록\n- \n";
+            break;
+        case 'timeline':
+            template = "■ 과거 주요 연표\n- [년도/시기]: (사건 내용)\n- [년도/시기]: (사건 내용)\n\n■ 본편 타임라인\n- [에피소드 1]: \n- [에피소드 2]: \n";
             break;
         case 'character':
             template = "■ 주인공\n- 이름: \n- 성격/행동 원리: \n- 외형: \n- 핵심 결핍/욕망: \n- 주요 능력: \n\n■ 주요 조력자 1\n- 이름: \n- 주인공과의 관계: \n- 특징: \n\n■ 임시 인물들\n- \n";
@@ -195,9 +221,12 @@ export function BiblePanel({ bible, setBible }: BiblePanelProps) {
   const baseTabs = useMemo(() => [
     { id: 'logline', label: '핵심/로그라인', description: '제목, 장르, 로그라인, 기대효과', icon: <Zap className="w-5 h-5" /> },
     { id: 'story', label: '스토리', description: '기승전결 및 핵심 시놉시스', icon: <Book className="w-5 h-5" /> },
+    { id: 'world', label: '세계관/장소', description: '배경, 규칙, 세력', icon: <Globe className="w-5 h-5" /> },
     { id: 'system', label: '능력', description: '치트, 무공, 마법, 특수 체질', icon: <Swords className="w-5 h-5" /> },
+    { id: 'item', label: '아이템/유물', description: '핵심 아이템 및 장비', icon: <Package className="w-5 h-5" /> },
     { id: 'character', label: '캐릭터', description: '주인공 및 주요 인물, 관계도', icon: <Users className="w-5 h-5" /> },
     { id: 'villain', label: '빌런', description: '최종 보스, 적대 세력', icon: <Skull className="w-5 h-5" /> },
+    { id: 'timeline', label: '연표/타임라인', description: '과거 사건 및 시간선', icon: <Clock className="w-5 h-5" /> },
     { id: 'structure', label: '집필지침', description: '어조, 문체, 주의사항', icon: <LayoutTemplate className="w-5 h-5" /> },
     { id: 'episode', label: '에피소드', description: '주요 사건과 회차별 개요', icon: <Map className="w-5 h-5" /> },
   ], []);
@@ -359,6 +388,11 @@ export function BiblePanel({ bible, setBible }: BiblePanelProps) {
           <div className="border-b border-slate-100 bg-white/50 px-8 py-3 flex flex-wrap items-center justify-between gap-3 shadow-sm z-10 shrink-0">
              <p className="text-[13px] text-slate-500 font-medium">자동 양식을 사용하면 틀에 맞춰 쉽게 설정을 정리할 수 있습니다.</p>
              <div className="flex gap-2">
+                <Button variant="outline" size="sm" onClick={() => setShowTips(!showTips)} className="text-slate-600 border-slate-200 hover:bg-slate-50 bg-white h-8 text-[13px] hidden xl:flex">
+                  {showTips ? <PanelRightClose className="w-3.5 h-3.5 mr-1.5" /> : <PanelRightOpen className="w-3.5 h-3.5 mr-1.5" />}
+                  {showTips ? '팁 숨기기' : '팁 보기'}
+                </Button>
+                <div className="w-px h-5 bg-slate-200 mx-1 self-center hidden xl:block"></div>
                 <Button variant="outline" size="sm" onClick={insertTemplate} className="text-indigo-600 border-indigo-200 hover:bg-indigo-50 bg-white h-8 text-[13px]">
                   <FilePlus className="w-3.5 h-3.5 mr-1.5" /> 템플릿 채우기
                 </Button>
@@ -408,8 +442,11 @@ export function BiblePanel({ bible, setBible }: BiblePanelProps) {
                     placeholder={
                       activeTab === 'logline' ? "• [장르] (예: 현대판타지, 회빙환)\n• [제목 추천 후보]\n• [로그라인/1줄 요약] (예: 최하급 헌터가 죽음 직전 과거로 돌아가 모든 걸 씹어먹는 이야기)\n• [기대효과/독자 후킹 포인트] (예: 사이다 전개, 성좌들의 반응)" :
                       activeTab === 'story' ? "• [전반적인 주제]\n• [핵심 시놉시스 (3줄 요약)]\n• [기승전결(플롯) 및 주요 갈등]\n• [1~15화 초반 전개 방향 및 떡밥]" :
+                      activeTab === 'world' ? "• [주요 배경/장소]\n• [세계관 고유 규칙/상식]\n• [주요 세력 및 조직]" :
                       activeTab === 'system' ? "• [치트키/사이다 액션 요소]\n• [주인공만의 특별한 능력/상태창/보상 시스템]\n• [세계관 고유의 마법/무공 규칙과 부작용]\n• [상성 및 스펙 밸런스 설정]" :
+                      activeTab === 'item' ? "• [핵심 아이템/아티팩트]\n• [주요 장비 목록]" :
                       activeTab === 'villain' ? "• [최종 보스/흑막] (배경, 목적, 행동 이유)\n• [중간 보스 및 안티고니스트]\n• [주인공과의 대립 구조 및 적대 세력(산하 조직)]\n• [위기감 조성 방식]" :
+                      activeTab === 'timeline' ? "• [과거 주요 연표]\n• [본편 에피소드 진행 타임라인]" :
                       activeTab === 'structure' ? "• [어조 및 문체] (예: 가독성을 최우선으로, 짧고 간결한 문장, 웹소설식 엔터키 활용)\n• [전개 속도] (예: 지루한 설명은 빼고 대사와 행동 위주로)\n• [시점] (예: 1인칭 주인공 시점, 독백과 내면 심리 적극 활용)\n• [클리프행어/회차 끊기 규칙]" :
                       "• [현재 진행 중인 에피소드 목표]\n• [이 회차의 주요 사건 및 갈등]\n• [주인공이 얻게 되는 보상 혹은 깨달음]\n• [회차별 전개 개요 자유 작성]"
                     }
@@ -423,7 +460,8 @@ export function BiblePanel({ bible, setBible }: BiblePanelProps) {
         </div>
 
         {/* Right Sidebar for Consultant Tips */}
-        <div className="w-80 bg-slate-50/50 hidden xl:flex flex-col shrink-0">
+        {showTips && (
+        <div className="w-80 bg-slate-50/50 hidden xl:flex flex-col shrink-0 border-l border-slate-200">
           <div className="p-6 border-b border-slate-100 bg-white/50">
             <div className="flex items-center gap-2 text-indigo-700 font-bold mb-1">
               <Lightbulb className="w-4 h-4 text-amber-500" />
@@ -488,6 +526,7 @@ export function BiblePanel({ bible, setBible }: BiblePanelProps) {
             </AnimatePresence>
           </div>
         </div>
+        )}
       </div>
     </div>
   );

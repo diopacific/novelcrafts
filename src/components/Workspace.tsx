@@ -19,6 +19,7 @@ export function Workspace({ bible, episodes, setEpisodes }: WorkspaceProps) {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [showQuickBible, setShowQuickBible] = useState(false);
+  const [editorFontSize, setEditorFontSize] = useState(16);
 
   // Search & Replace State
   const [showSearchReplace, setShowSearchReplace] = useState(false);
@@ -133,6 +134,40 @@ export function Workspace({ bible, episodes, setEpisodes }: WorkspaceProps) {
     }
   };
 
+  const moveEpisode = (index: number, direction: 'up' | 'down', e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (direction === 'up' && index === 0) return;
+    if (direction === 'down' && index === episodes.length - 1) return;
+
+    setEpisodes(prev => {
+      const newEps = [...prev];
+      const targetIndex = direction === 'up' ? index - 1 : index + 1;
+      // Swap elements
+      const temp = newEps[index];
+      newEps[index] = newEps[targetIndex];
+      newEps[targetIndex] = temp;
+      
+      // Re-number
+      return newEps.map((ep, idx) => ({ ...ep, number: idx + 1 }));
+    });
+  };
+
+  const downloadEpisode = () => {
+    const title = activeEpisodeId === 'new' ? `제${nextEpisodeNum}화` : `제${activeEpInfo?.number}화`;
+    const fileName = `${title}_${formState.direction || '제목없음'}.txt`;
+    const content = `${title} ${formState.direction}\n\n${formState.content}`;
+    
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   const filteredEpisodes = useMemo(() => episodes.filter(ep => {
     const matchesSearch = searchTerm === '' || 
       ep.direction.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -153,7 +188,7 @@ export function Workspace({ bible, episodes, setEpisodes }: WorkspaceProps) {
   const activeEpInfo = episodes.find(e => e.id === activeEpisodeId);
 
   const generatePrompt = (type: 'continue' | 'interactive' | 'build') => {
-    const baseBible = `\n[현행 작품 설정 바이블]\n- 핵심/로그라인: ${bible.logline}\n- 스토리: ${bible.story}\n- 능력: ${bible.system}\n- 캐릭터: ${bible.character}\n- 빌런: ${bible.villain}\n- 집필지침: ${bible.structure}\n- 에피소드: ${bible.episode}\n`;
+    const baseBible = `\n[현행 작품 설정 바이블]\n- 핵심/로그라인: ${bible.logline}\n- 스토리: ${bible.story}\n- 세계관/장소: ${bible.world}\n- 능력: ${bible.system}\n- 아이템/유물: ${bible.item}\n- 캐릭터: ${bible.character}\n- 빌런: ${bible.villain}\n- 연표/타임라인: ${bible.timeline}\n- 집필지침: ${bible.structure}\n- 에피소드: ${bible.episode}\n`;
     
     let prompt = '';
     if (type === 'continue') {
@@ -281,9 +316,17 @@ export function Workspace({ bible, episodes, setEpisodes }: WorkspaceProps) {
                        }`}>
                          {ep.status === 'completed' ? '완성' : ep.status === 'revision' ? '수정' : '초고'}
                        </span>
-                       <button onClick={(e) => deleteEpisode(ep.id, e)} className="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
-                         <Trash2 className="w-3.5 h-3.5" />
-                       </button>
+                       <div className="flex opacity-0 group-hover:opacity-100 transition-opacity">
+                         <button onClick={(e) => moveEpisode(filteredEpisodes.findIndex(e => e.id === ep.id), 'up', e)} className="text-slate-300 hover:text-indigo-500 p-0.5">
+                           <ChevronUp className="w-3.5 h-3.5" />
+                         </button>
+                         <button onClick={(e) => moveEpisode(filteredEpisodes.findIndex(e => e.id === ep.id), 'down', e)} className="text-slate-300 hover:text-indigo-500 p-0.5">
+                           <ChevronDown className="w-3.5 h-3.5" />
+                         </button>
+                         <button onClick={(e) => deleteEpisode(ep.id, e)} className="text-slate-300 hover:text-red-500 ml-1 p-0.5">
+                           <Trash2 className="w-3.5 h-3.5" />
+                         </button>
+                       </div>
                     </div>
                   </div>
                   <h4 className="text-[13px] font-medium text-slate-600 truncate">{ep.direction || '제목 없음'}</h4>
@@ -320,8 +363,16 @@ export function Workspace({ bible, episodes, setEpisodes }: WorkspaceProps) {
                </span>
             </div>
             <div className="flex items-center gap-2">
+              <div className="hidden sm:flex items-center bg-slate-50 border border-slate-200 rounded-md overflow-hidden h-8 mr-2">
+                <button onClick={() => setEditorFontSize(f => Math.max(12, f - 2))} className="px-2.5 text-slate-500 hover:text-slate-800 hover:bg-slate-100 font-bold" title="글꼴 작게">A-</button>
+                <div className="w-px h-4 bg-slate-200"></div>
+                <button onClick={() => setEditorFontSize(f => Math.min(24, f + 2))} className="px-2.5 text-slate-500 hover:text-slate-800 hover:bg-slate-100 font-bold text-sm" title="글꼴 크게">A+</button>
+              </div>
+              <Button variant="outline" size="sm" onClick={downloadEpisode} className="h-8 border-slate-200 text-slate-600 hover:bg-slate-50 hidden sm:flex">
+                <FileText className="w-3.5 h-3.5 mr-1.5" /> TXT 다운로드
+              </Button>
               <Button variant="outline" size="sm" onClick={() => copyToClipboard(formState.content)} className="h-8 border-slate-200 text-slate-600 hover:bg-slate-50 hidden sm:flex">
-                <Copy className="w-3.5 h-3.5 mr-1.5" /> 원고 복사
+                <Copy className="w-3.5 h-3.5 mr-1.5" /> 복사
               </Button>
               <Button variant="outline" size="sm" onClick={() => setFormState(f => ({...f, content: cleanAIText(f.content)}))} className="h-8 border-slate-200 text-slate-600 hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200">
                 <Wand2 className="w-3.5 h-3.5 mr-1.5" /> 텍스트 정제
@@ -366,12 +417,23 @@ export function Workspace({ bible, episodes, setEpisodes }: WorkspaceProps) {
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <label className="text-[13px] font-bold text-slate-700 block">본문 원고</label>
-                  <span className="text-[11px] font-mono font-bold bg-slate-100 text-slate-500 px-2.5 py-1 rounded-lg border border-slate-200 shadow-sm">
-                    {formState.content.length.toLocaleString()} 자 (<span className="opacity-70">공백제외 </span>{formState.content.replace(/\s/g, '').length.toLocaleString()} 자)
-                  </span>
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-1.5 w-32 hidden sm:flex" title="목표 글자수 (5500자)">
+                      <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                        <div 
+                          className={`h-full rounded-full transition-all ${formState.content.length >= 5500 ? 'bg-emerald-500' : 'bg-indigo-500'}`}
+                          style={{ width: `${Math.min(100, (formState.content.length / 5500) * 100)}%` }}
+                        />
+                      </div>
+                    </div>
+                    <span className="text-[11px] font-mono font-bold bg-slate-100 text-slate-500 px-2.5 py-1 rounded-lg border border-slate-200 shadow-sm">
+                      {formState.content.length.toLocaleString()} 자 (<span className="opacity-70">공백제외 </span>{formState.content.replace(/\s/g, '').length.toLocaleString()} 자)
+                    </span>
+                  </div>
                 </div>
                 <Textarea 
-                  className={`${isFullscreen ? 'min-h-[600px]' : 'min-h-[500px] h-[500px]'} bg-slate-50 focus:bg-white border-slate-200 text-[16px] font-medium leading-[2] font-serif shadow-inner resize-y`}
+                  className={`${isFullscreen ? 'min-h-[600px]' : 'min-h-[500px] h-[500px]'} bg-slate-50 focus:bg-white border-slate-200 font-medium leading-[2] font-serif shadow-inner resize-y transition-colors`}
+                  style={{ fontSize: `${editorFontSize}px` }}
                   value={formState.content}
                   onChange={(e) => setFormState(f => ({...f, content: e.target.value}))}
                   placeholder="당신의 빛나는 이야기를 시작해 보세요..."
@@ -433,9 +495,12 @@ export function Workspace({ bible, episodes, setEpisodes }: WorkspaceProps) {
               {[
                 { title: '핵심/로그라인', content: bible.logline },
                 { title: '스토리', content: bible.story },
+                { title: '세계관/장소', content: bible.world },
                 { title: '능력', content: bible.system },
+                { title: '아이템/유물', content: bible.item },
                 { title: '캐릭터', content: bible.character },
                 { title: '빌런', content: bible.villain },
+                { title: '연표/타임라인', content: bible.timeline },
                 { title: '집필지침', content: bible.structure },
                 { title: '에피소드', content: bible.episode }
               ].map((section, idx) => (

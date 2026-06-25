@@ -31,8 +31,10 @@ export function useDbStorage() {
         story: '',
         world: '',
         system: '',
+        item: '',
         character: '',
         villain: '',
+        timeline: '',
         structure: '',
         episode: ''
       });
@@ -54,8 +56,10 @@ export function useDbStorage() {
             story: data.story || '',
             world: data.world || '',
             system: data.system || '',
+            item: data.item || '',
             character: data.character || '',
             villain: data.villain || '',
+            timeline: data.timeline || '',
             structure: data.structure || '',
             episode: data.episode || '',
             customTabs: data.customTabs || []
@@ -110,8 +114,10 @@ export function useDbStorage() {
           story: resolvedState.story || '',
           world: resolvedState.world || '',
           system: resolvedState.system || '',
+          item: resolvedState.item || '',
           character: resolvedState.character || '',
           villain: resolvedState.villain || '',
+          timeline: resolvedState.timeline || '',
           structure: resolvedState.structure || '',
           episode: resolvedState.episode || '',
           customTabs: resolvedState.customTabs || [],
