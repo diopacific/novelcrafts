@@ -432,7 +432,7 @@ export function Workspace({ bible, episodes, setEpisodes }: WorkspaceProps) {
                   </div>
                 </div>
                 <Textarea 
-                  className={`${isFullscreen ? 'min-h-[600px]' : 'min-h-[500px] h-[500px]'} bg-slate-50 focus:bg-white border-slate-200 font-medium leading-[2] font-serif shadow-inner resize-y transition-colors`}
+                  className={`${isFullscreen ? 'min-h-[600px]' : 'min-h-[500px] h-[500px]'} bg-white border border-slate-200 focus:border-indigo-300 focus:ring-4 focus:ring-indigo-500/10 font-medium leading-[2] font-serif shadow-sm resize-y transition-all rounded-xl p-6`}
                   style={{ fontSize: `${editorFontSize}px` }}
                   value={formState.content}
                   onChange={(e) => setFormState(f => ({...f, content: e.target.value}))}
@@ -444,7 +444,7 @@ export function Workspace({ bible, episodes, setEpisodes }: WorkspaceProps) {
                 <div className="space-y-2">
                   <label className="text-[13px] font-bold text-slate-700 flex items-center gap-1.5"><ListFilter className="w-4 h-4 text-slate-400"/> 회차 요약</label>
                   <Textarea 
-                    className="h-28 text-[13px] leading-relaxed bg-slate-50/80"
+                    className="h-28 text-[13px] leading-relaxed bg-white border border-slate-200 focus:border-indigo-300 focus:ring-4 focus:ring-indigo-500/10 shadow-sm rounded-xl p-4 transition-all"
                     placeholder="나중 검색과 흐름 파악을 위해 핵심 사건을 요약해 두면 편리합니다."
                     value={formState.summary}
                     onChange={(e) => setFormState(f => ({...f, summary: e.target.value}))}
@@ -453,7 +453,7 @@ export function Workspace({ bible, episodes, setEpisodes }: WorkspaceProps) {
                 <div className="space-y-2">
                   <label className="text-[13px] font-bold text-slate-700 flex items-center gap-1.5"><PenTool className="w-4 h-4 text-indigo-400"/> 작가의 말 / 메모</label>
                   <Textarea 
-                    className="h-28 text-[13px] leading-relaxed bg-indigo-50/30 border-indigo-100 focus:ring-indigo-500/30 focus:border-indigo-300"
+                    className="h-28 text-[13px] leading-relaxed bg-white border border-indigo-100 focus:border-indigo-300 focus:ring-4 focus:ring-indigo-500/10 shadow-sm rounded-xl p-4 transition-all"
                     placeholder="업로드 시 덧붙일 작가의 말이나, 개인적인 수정 아이디어를 기록합니다."
                     value={formState.authorNote}
                     onChange={(e) => setFormState(f => ({...f, authorNote: e.target.value}))}
