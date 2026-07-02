@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { BibleState, Episode } from '../types';
 import { Button } from './ui/button';
 import { Textarea } from './ui/textarea';
-import { PenTool, CheckCircle2, ListFilter, Trash2, Edit3, Save, X, Plus, ChevronUp, ChevronDown, ChevronRight, FileText, Search, Replace, BookOpen, Sparkles, Copy, Wand2, Maximize2, Minimize2, MoreVertical, LayoutPanelLeft } from 'lucide-react';
+import { PenTool, CheckCircle2, ListFilter, Trash2, Edit3, Save, X, Plus, ChevronUp, ChevronDown, ChevronRight, FileText, Search, Replace, BookOpen, Sparkles, Copy, Wand2, Maximize2, Minimize2, MoreVertical, LayoutPanelLeft, Loader2, MessageSquare } from 'lucide-react';
 import { useAuth } from '../AuthContext';
 
 interface WorkspaceProps {
@@ -20,6 +20,9 @@ export function Workspace({ bible, episodes, setEpisodes }: WorkspaceProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [showQuickBible, setShowQuickBible] = useState(false);
   const [editorFontSize, setEditorFontSize] = useState(16);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [aiFeedback, setAiFeedback] = useState<string | null>(null);
+  const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'unsaved'>('saved');
 
   // Search & Replace State
   const [showSearchReplace, setShowSearchReplace] = useState(false);
@@ -78,6 +81,8 @@ export function Workspace({ bible, episodes, setEpisodes }: WorkspaceProps) {
       return;
     }
 
+    setSaveStatus('saving');
+
     if (activeEpisodeId === 'new') {
       const newEpisode: Episode = {
         id: `ep-${Date.now()}`,
@@ -101,9 +106,38 @@ export function Workspace({ bible, episodes, setEpisodes }: WorkspaceProps) {
           status: formState.status
         } : ep
       ));
-      alert('저장되었습니다.');
     }
+    
+    setTimeout(() => setSaveStatus('saved'), 500);
   };
+
+  // Keyboard shortcut for saving
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        handleSave();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handleSave]);
+
+  const handleContentChange = (field: string, value: string) => {
+    setFormState(f => ({ ...f, [field]: value }));
+    setSaveStatus('unsaved');
+  };
+
+  // Auto-save effect
+  useEffect(() => {
+    if (saveStatus !== 'unsaved') return;
+
+    const timer = setTimeout(() => {
+      handleSave();
+    }, 15000); // Auto-save after 15 seconds of inactivity
+
+    return () => clearTimeout(timer);
+  }, [formState, saveStatus, handleSave]);
 
   const deleteEpisode = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -203,51 +237,122 @@ export function Workspace({ bible, episodes, setEpisodes }: WorkspaceProps) {
     alert('AI 프롬프트가 클립보드에 복사되었습니다! 외부 AI 툴(ChatGPT, Claude, Gemini 등)에 붙여넣기 하세요.');
   };
 
+  const handleAiAutocomplete = async () => {
+    if (!formState.content.trim()) {
+      alert("먼저 몇 문장을 작성해주세요.");
+      return;
+    }
+    
+    setIsGenerating(true);
+    try {
+      const baseBible = `핵심/로그라인: ${bible.logline}\n스토리: ${bible.story}\n세계관: ${bible.world}\n캐릭터: ${bible.character}\n빌런: ${bible.villain}`;
+      
+      const response = await fetch('/api/ai/autocomplete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          text: formState.content,
+          context: baseBible
+        })
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok && data.text) {
+        setFormState(f => ({ ...f, content: f.content + (f.content.endsWith(' ') || f.content.endsWith('\n') ? '' : ' ') + data.text }));
+      } else {
+        alert(data.error || 'AI 생성에 실패했습니다.');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('오류가 발생했습니다.');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handleAiFeedback = async () => {
+    if (formState.content.length < 100) {
+      alert("피드백을 받으려면 최소 100자 이상 작성해주세요.");
+      return;
+    }
+    
+    setIsGenerating(true);
+    setAiFeedback(null);
+    try {
+      const baseBible = `핵심/로그라인: ${bible.logline}\n스토리: ${bible.story}\n세계관: ${bible.world}\n캐릭터: ${bible.character}`;
+      
+      const response = await fetch('/api/ai/feedback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          text: formState.content,
+          context: baseBible
+        })
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok && data.feedback) {
+        setAiFeedback(data.feedback);
+      } else {
+        alert(data.error || '피드백 생성에 실패했습니다.');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('오류가 발생했습니다.');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
   return (
     <div className="flex-1 flex flex-col w-full h-full bg-white overflow-hidden">
       
       {/* Header */}
-      <header className="h-[72px] shrink-0 bg-white border-b border-slate-200 px-8 flex items-center justify-between shadow-sm z-10 sticky top-0">
-        <div className="flex flex-col">
-          <h1 className="text-xl font-bold tracking-tight text-slate-800">회차 보관함</h1>
-          <p className="text-sm text-slate-500">원고를 체계적으로 관리하고 편집하세요.</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <div className="flex flex-col items-end mr-4 hidden md:flex">
-            <span className="text-[11px] font-bold text-slate-500 mb-1">유료화 목표 (15만자) 달성률 {progressPercent}%</span>
-            <div className="w-32 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-              <div 
-                className="h-full bg-gradient-to-r from-emerald-400 to-emerald-600 rounded-full"
-                style={{ width: `${progressPercent}%` }}
-              />
+      {!isFullscreen && (
+        <header className="h-[72px] shrink-0 bg-white border-b border-slate-200 px-8 flex items-center justify-between shadow-sm z-10 sticky top-0">
+          <div className="flex flex-col">
+            <h1 className="text-xl font-bold tracking-tight text-slate-800">회차 보관함</h1>
+            <p className="text-sm text-slate-500">원고를 체계적으로 관리하고 편집하세요.</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="flex flex-col items-end mr-4 hidden md:flex">
+              <span className="text-[11px] font-bold text-slate-500 mb-1">유료화 목표 (15만자) 달성률 {progressPercent}%</span>
+              <div className="w-32 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-gradient-to-r from-emerald-400 to-emerald-600 rounded-full"
+                  style={{ width: `${progressPercent}%` }}
+                />
+              </div>
             </div>
-          </div>
-          <div className="hidden lg:flex items-center gap-2 mr-2">
-            <Button variant="outline" size="sm" onClick={() => generatePrompt('continue')} className="border-indigo-200 text-indigo-700 hover:bg-indigo-50" title="다음 화 이어쓰기 프롬프트 복사">
-               <Sparkles className="w-4 h-4 mr-1.5" /> 이어쓰기 AI
+            <div className="hidden lg:flex items-center gap-2 mr-2">
+              <Button variant="outline" size="sm" onClick={() => generatePrompt('continue')} className="border-indigo-200 text-indigo-700 hover:bg-indigo-50" title="다음 화 이어쓰기 프롬프트 복사">
+                 <Sparkles className="w-4 h-4 mr-1.5" /> 이어쓰기 AI
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => generatePrompt('interactive')} className="border-indigo-200 text-indigo-700 hover:bg-indigo-50" title="인터랙티브 소설 게임 프롬프트 복사">
+                 <Sparkles className="w-4 h-4 mr-1.5" /> 소설 게임 AI
+              </Button>
+            </div>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className={`border-indigo-200 ${showSearchReplace ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600 hover:text-indigo-600 hover:bg-slate-50'}`}
+              onClick={() => setShowSearchReplace(!showSearchReplace)}
+            >
+              <Replace className="w-4 h-4 mr-1.5" /> 전체 단어 치환
             </Button>
-            <Button variant="outline" size="sm" onClick={() => generatePrompt('interactive')} className="border-indigo-200 text-indigo-700 hover:bg-indigo-50" title="인터랙티브 소설 게임 프롬프트 복사">
-               <Sparkles className="w-4 h-4 mr-1.5" /> 소설 게임 AI
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className={`border-indigo-200 ${showQuickBible ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600 hover:text-indigo-600 hover:bg-slate-50'}`}
+              onClick={() => setShowQuickBible(!showQuickBible)}
+            >
+              <BookOpen className="w-4 h-4 mr-1.5" /> 설정집 퀵뷰
             </Button>
           </div>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className={`border-indigo-200 ${showSearchReplace ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600 hover:text-indigo-600 hover:bg-slate-50'}`}
-            onClick={() => setShowSearchReplace(!showSearchReplace)}
-          >
-            <Replace className="w-4 h-4 mr-1.5" /> 전체 단어 치환
-          </Button>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className={`border-indigo-200 ${showQuickBible ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600 hover:text-indigo-600 hover:bg-slate-50'}`}
-            onClick={() => setShowQuickBible(!showQuickBible)}
-          >
-            <BookOpen className="w-4 h-4 mr-1.5" /> 설정집 퀵뷰
-          </Button>
-        </div>
-      </header>
+        </header>
+      )}
 
       {/* Main Layout Area */}
       <div className="flex-1 flex overflow-hidden">
@@ -359,35 +464,63 @@ export function Workspace({ bible, episodes, setEpisodes }: WorkspaceProps) {
           <div className="border-b border-slate-100 px-8 py-3 flex justify-between items-center bg-white shrink-0 shadow-[0_4px_20px_rgb(0,0,0,0.02)] z-10">
             <div className="flex items-center gap-3">
                <span className="text-sm font-bold text-slate-800">
-                 {activeEpisodeId === 'new' ? `새 제 ${nextEpisodeNum} 화 기획 및 작성` : `제 ${activeEpInfo?.number} 화 편집 (저장됨)`}
+                 {activeEpisodeId === 'new' ? `새 제 ${nextEpisodeNum} 화 기획 및 작성` : `제 ${activeEpInfo?.number} 화 편집`}
+               </span>
+               <span className={`text-[11px] px-2 py-0.5 rounded-full font-bold ${
+                 saveStatus === 'saved' ? 'bg-slate-100 text-slate-500' : 
+                 saveStatus === 'saving' ? 'bg-indigo-100 text-indigo-500' : 
+                 'bg-amber-100 text-amber-600'
+               }`}>
+                 {saveStatus === 'saved' ? '저장됨' : saveStatus === 'saving' ? '저장 중...' : '저장 안 됨 (Ctrl+S)'}
                </span>
             </div>
-            <div className="flex items-center gap-2">
-              <div className="hidden sm:flex items-center bg-slate-50 border border-slate-200 rounded-md overflow-hidden h-8 mr-2">
-                <button onClick={() => setEditorFontSize(f => Math.max(12, f - 2))} className="px-2.5 text-slate-500 hover:text-slate-800 hover:bg-slate-100 font-bold" title="글꼴 작게">A-</button>
-                <div className="w-px h-4 bg-slate-200"></div>
-                <button onClick={() => setEditorFontSize(f => Math.min(24, f + 2))} className="px-2.5 text-slate-500 hover:text-slate-800 hover:bg-slate-100 font-bold text-sm" title="글꼴 크게">A+</button>
+            
+            <div className="flex items-center gap-4">
+              {/* Text Tools Group */}
+              <div className="flex items-center gap-1.5 border-r border-slate-200 pr-4">
+                <div className="hidden sm:flex items-center bg-slate-50 border border-slate-200 rounded-md overflow-hidden h-8 mr-1">
+                  <button onClick={() => setEditorFontSize(f => Math.max(12, f - 2))} className="px-2.5 text-slate-500 hover:text-slate-800 hover:bg-slate-200 font-bold" title="글꼴 작게">A-</button>
+                  <div className="w-px h-4 bg-slate-200"></div>
+                  <button onClick={() => setEditorFontSize(f => Math.min(24, f + 2))} className="px-2.5 text-slate-500 hover:text-slate-800 hover:bg-slate-200 font-bold text-sm" title="글꼴 크게">A+</button>
+                </div>
+                <Button variant="outline" size="sm" onClick={() => setFormState(f => ({...f, content: cleanAIText(f.content)}))} className="h-8 border-slate-200 text-slate-600 hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200" title="텍스트 정제">
+                  <Wand2 className="w-3.5 h-3.5" />
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => copyToClipboard(formState.content)} className="h-8 border-slate-200 text-slate-600 hover:bg-slate-50 hidden sm:flex" title="복사">
+                  <Copy className="w-3.5 h-3.5" />
+                </Button>
+                <Button variant="outline" size="sm" onClick={downloadEpisode} className="h-8 border-slate-200 text-slate-600 hover:bg-slate-50 hidden sm:flex" title="TXT 다운로드">
+                  <FileText className="w-3.5 h-3.5" />
+                </Button>
               </div>
-              <Button variant="outline" size="sm" onClick={downloadEpisode} className="h-8 border-slate-200 text-slate-600 hover:bg-slate-50 hidden sm:flex">
-                <FileText className="w-3.5 h-3.5 mr-1.5" /> TXT 다운로드
-              </Button>
-              <Button variant="outline" size="sm" onClick={() => copyToClipboard(formState.content)} className="h-8 border-slate-200 text-slate-600 hover:bg-slate-50 hidden sm:flex">
-                <Copy className="w-3.5 h-3.5 mr-1.5" /> 복사
-              </Button>
-              <Button variant="outline" size="sm" onClick={() => setFormState(f => ({...f, content: cleanAIText(f.content)}))} className="h-8 border-slate-200 text-slate-600 hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200">
-                <Wand2 className="w-3.5 h-3.5 mr-1.5" /> 텍스트 정제
-              </Button>
-              <Button variant="outline" size="sm" onClick={() => setIsFullscreen(!isFullscreen)} className="h-8 border-slate-200 text-slate-600 hover:bg-slate-50" title="전체화면 집중 모드">
-                {isFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
-              </Button>
-              <Button size="sm" onClick={handleSave} className="h-8 bg-slate-900 text-white hover:bg-slate-800 shadow-sm ml-2">
-                <Save className="w-4 h-4 mr-1.5" /> 저장하기
-              </Button>
+
+              {/* AI Tools Group */}
+              <div className="flex items-center gap-1.5 border-r border-slate-200 pr-4">
+                <Button variant="outline" size="sm" onClick={handleAiAutocomplete} disabled={isGenerating} className="h-8 border-indigo-200 text-indigo-600 hover:bg-indigo-50 hover:border-indigo-300">
+                  {isGenerating ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5 mr-1.5" />} 
+                  AI 이어쓰기
+                </Button>
+                <Button variant="outline" size="sm" onClick={handleAiFeedback} disabled={isGenerating} className="h-8 border-emerald-200 text-emerald-600 hover:bg-emerald-50 hover:border-emerald-300">
+                  {isGenerating ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : <MessageSquare className="w-3.5 h-3.5 mr-1.5" />}
+                  AI 피드백
+                </Button>
+              </div>
+
+              {/* Action Group */}
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" onClick={() => setIsFullscreen(!isFullscreen)} className={`h-8 border-slate-200 ${isFullscreen ? 'bg-slate-800 text-white hover:bg-slate-700' : 'text-slate-600 hover:bg-slate-50'}`} title="전체화면 집중 모드">
+                  {isFullscreen ? <Minimize2 className="w-3.5 h-3.5 mr-1.5" /> : <Maximize2 className="w-3.5 h-3.5 mr-1.5" />}
+                  {isFullscreen ? '일반 모드' : '집중 모드'}
+                </Button>
+                <Button size="sm" onClick={handleSave} className="h-8 bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm">
+                  <Save className="w-4 h-4 mr-1.5" /> 저장
+                </Button>
+              </div>
             </div>
           </div>
 
           <div className="flex-1 overflow-y-auto w-full custom-scrollbar scroll-smooth">
-            <div className={`mx-auto ${isFullscreen ? 'max-w-5xl px-12 py-10' : 'max-w-4xl px-8 py-8'} space-y-6 pb-32`}>
+            <div className={`mx-auto ${isFullscreen ? 'w-full max-w-6xl px-12 py-10' : 'max-w-4xl px-8 py-8'} space-y-6 pb-32 transition-all duration-300`}>
               
               <div className="flex gap-4">
                 <div className="flex-1 space-y-2">
@@ -397,7 +530,7 @@ export function Workspace({ bible, episodes, setEpisodes }: WorkspaceProps) {
                     placeholder="(선택) 이 회차의 부제나 달성 목표를 적어보세요"
                     className="w-full text-lg font-bold px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-300 transition-colors"
                     value={formState.direction}
-                    onChange={(e) => setFormState(f => ({...f, direction: e.target.value}))}
+                    onChange={(e) => handleContentChange('direction', e.target.value)}
                   />
                 </div>
                 <div className="w-40 shrink-0 space-y-2 hidden sm:block">
@@ -405,7 +538,7 @@ export function Workspace({ bible, episodes, setEpisodes }: WorkspaceProps) {
                   <select 
                     className="w-full text-sm font-medium border border-slate-200 rounded-xl py-3 px-3 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
                     value={formState.status}
-                    onChange={(e) => setFormState(f => ({...f, status: e.target.value as any}))}
+                    onChange={(e) => handleContentChange('status', e.target.value)}
                   >
                     <option value="draft">초고</option>
                     <option value="revision">수정중</option>
@@ -432,10 +565,10 @@ export function Workspace({ bible, episodes, setEpisodes }: WorkspaceProps) {
                   </div>
                 </div>
                 <Textarea 
-                  className={`${isFullscreen ? 'min-h-[600px]' : 'min-h-[500px] h-[500px]'} bg-white border border-slate-200 focus:border-indigo-300 focus:ring-4 focus:ring-indigo-500/10 font-medium leading-[2] font-serif shadow-sm resize-y transition-all rounded-xl p-6`}
+                  className={`${isFullscreen ? 'min-h-[calc(100vh-300px)] h-[calc(100vh-300px)]' : 'min-h-[500px] h-[500px]'} bg-white border border-slate-200 focus:border-indigo-300 focus:ring-4 focus:ring-indigo-500/10 font-medium leading-[2] font-serif shadow-sm resize-y transition-all rounded-xl p-6`}
                   style={{ fontSize: `${editorFontSize}px` }}
                   value={formState.content}
-                  onChange={(e) => setFormState(f => ({...f, content: e.target.value}))}
+                  onChange={(e) => handleContentChange('content', e.target.value)}
                   placeholder="당신의 빛나는 이야기를 시작해 보세요..."
                 />
               </div>
@@ -447,7 +580,7 @@ export function Workspace({ bible, episodes, setEpisodes }: WorkspaceProps) {
                     className="h-28 text-[13px] leading-relaxed bg-white border border-slate-200 focus:border-indigo-300 focus:ring-4 focus:ring-indigo-500/10 shadow-sm rounded-xl p-4 transition-all"
                     placeholder="나중 검색과 흐름 파악을 위해 핵심 사건을 요약해 두면 편리합니다."
                     value={formState.summary}
-                    onChange={(e) => setFormState(f => ({...f, summary: e.target.value}))}
+                    onChange={(e) => handleContentChange('summary', e.target.value)}
                   />
                 </div>
                 <div className="space-y-2">
@@ -456,9 +589,24 @@ export function Workspace({ bible, episodes, setEpisodes }: WorkspaceProps) {
                     className="h-28 text-[13px] leading-relaxed bg-white border border-indigo-100 focus:border-indigo-300 focus:ring-4 focus:ring-indigo-500/10 shadow-sm rounded-xl p-4 transition-all"
                     placeholder="업로드 시 덧붙일 작가의 말이나, 개인적인 수정 아이디어를 기록합니다."
                     value={formState.authorNote}
-                    onChange={(e) => setFormState(f => ({...f, authorNote: e.target.value}))}
+                    onChange={(e) => handleContentChange('authorNote', e.target.value)}
                   />
                 </div>
+                
+                {/* AI Feedback Panel */}
+                {aiFeedback && (
+                  <div className="col-span-1 md:col-span-2 space-y-2 mt-2 animate-in fade-in slide-in-from-bottom-2">
+                    <div className="flex items-center justify-between">
+                      <label className="text-[13px] font-bold text-emerald-700 flex items-center gap-1.5">
+                        <MessageSquare className="w-4 h-4" /> AI 편집자 피드백
+                      </label>
+                      <button onClick={() => setAiFeedback(null)} className="text-slate-400 hover:text-slate-600"><X className="w-4 h-4" /></button>
+                    </div>
+                    <div className="bg-emerald-50/50 border border-emerald-100 rounded-xl p-5 text-[14px] leading-relaxed text-slate-700 whitespace-pre-wrap font-medium shadow-sm">
+                      {aiFeedback}
+                    </div>
+                  </div>
+                )}
                 
                 {/* Mobile only status select */}
                 <div className="sm:hidden space-y-2">
