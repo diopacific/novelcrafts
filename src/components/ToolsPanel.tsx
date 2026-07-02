@@ -112,7 +112,7 @@ export function ToolsPanel({ bible, episodes, setBible, setEpisodes }: ToolsPane
     const confirmText = window.prompt('설정집과 모든 회차가 삭제됩니다. 이 작업은 되돌릴 수 없습니다. \n정말 초기화하시려면 "초기화"라고 입력해주세요.');
     if (confirmText === '초기화') {
       setBible({
-        logline: '', story: '', world: '', system: '', character: '', villain: '', structure: '', episode: ''
+        logline: '', story: '', world: '', system: '', character: '', villain: '', structure: '', episode: '', item: '', timeline: '', customTabs: []
       });
       setEpisodes([]);
       alert('데이터가 안전하게 초기화되었습니다.');

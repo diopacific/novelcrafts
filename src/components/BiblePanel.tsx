@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { BibleState, CustomBibleTab } from '../types';
 import { Button } from './ui/button';
 import { Textarea } from './ui/textarea';
 import { CharacterGraph } from './CharacterGraph';
-import { Book, Users, Map, Swords, Skull, LayoutTemplate, Save, Cloud, Loader2, Zap, Copy, FilePlus, Lightbulb, CheckCircle2, Plus, Trash2, Edit2, Check, X, Sparkles, Globe, Package, Clock, PanelRightClose, PanelRightOpen } from 'lucide-react';
+import { Book, Users, Map, Swords, Skull, LayoutTemplate, Save, Cloud, Loader2, Zap, Copy, FilePlus, FileMinus, Lightbulb, CheckCircle2, Plus, Trash2, Edit2, Check, X, Sparkles, Globe, Package, Clock, PanelRightClose, PanelRightOpen } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 interface BiblePanelProps {
@@ -104,6 +104,74 @@ export function BiblePanel({ bible, setBible }: BiblePanelProps) {
   const [editingTabId, setEditingTabId] = useState<string | null>(null);
   const [editTabLabel, setEditTabLabel] = useState('');
   const [showTips, setShowTips] = useState(true);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [aiIdea, setAiIdea] = useState<string | null>(null);
+  const [isOrganizing, setIsOrganizing] = useState(false);
+
+  const handleGenerateIdea = async () => {
+    setIsGenerating(true);
+    setAiIdea(null);
+    try {
+      const fullContext = `로그라인: ${bible.logline}\n스토리: ${bible.story}\n세계관: ${bible.world}\n캐릭터: ${bible.character}`;
+      const response = await fetch('/api/ai/bible', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tabName: baseTabs.find(t => t.id === activeTab)?.label || activeTab,
+          text: getFieldValue(activeTab),
+          fullContext
+        })
+      });
+      
+      const data = await response.json();
+      if (response.ok && data.text) {
+        setAiIdea(data.text);
+      } else {
+        alert(data.error || 'AI 생성에 실패했습니다.');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('오류가 발생했습니다.');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handleOrganizeDraft = async () => {
+    const text = getFieldValue(activeTab);
+    if (!text || text.trim().length < 10) {
+      alert('정리할 초안 내용을 최소 10자 이상 입력해주세요.');
+      return;
+    }
+    
+    setIsOrganizing(true);
+    try {
+      const fullContext = `로그라인: ${bible.logline}\n스토리: ${bible.story}\n세계관: ${bible.world}\n캐릭터: ${bible.character}`;
+      const response = await fetch('/api/ai/bible-organize', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tabName: baseTabs.find(t => t.id === activeTab)?.label || activeTab,
+          text,
+          fullContext
+        })
+      });
+      
+      const data = await response.json();
+      if (response.ok && data.organizedText) {
+        previousTextRef.current[activeTab + '_ai_backup'] = text;
+        updateField(activeTab, data.organizedText);
+        setAiIdea("✨ 초안이 깔끔하게 정리되었습니다.\n\n[편집자 코멘트]\n" + data.feedback + "\n\n💡 마음에 들지 않는다면 하단의 '원본 복구' 버튼을 눌러 되돌릴 수 있습니다.");
+      } else {
+        alert(data.error || 'AI 초안 정리에 실패했습니다.');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('오류가 발생했습니다.');
+    } finally {
+      setIsOrganizing(false);
+    }
+  };
 
   // To debounce the save to Cloud database
   useEffect(() => {
@@ -133,48 +201,60 @@ export function BiblePanel({ bible, setBible }: BiblePanelProps) {
     return (bible[field as keyof BibleState] as string) || '';
   };
 
-  const insertTemplate = () => {
-    let template = '';
+  const previousTextRef = useRef<Record<string, string>>({});
+
+  const getCurrentTemplate = () => {
     switch(activeTab) {
         case 'logline':
-            template = "■ 제목 후보\n1. \n2. \n3. \n\n■ 장르\n- \n\n■ 로그라인 (1줄 요약)\n- \n\n■ 핵심 셀링 포인트 (사이다 요소, 매력 포인트)\n1. \n2. \n";
-            break;
+            return "■ 제목 후보\n1. \n2. \n3. \n\n■ 장르\n- \n\n■ 로그라인 (1줄 요약)\n- \n\n■ 핵심 셀링 포인트 (사이다 요소, 매력 포인트)\n1. \n2. \n";
         case 'story':
-            template = "■ 핵심 갈등 플롯\n- \n\n■ 기승전결 플롯 (3줄 요약)\n[기] (발단 및 목적 부여): \n[승] (장애물과 시련): \n[전] (위기 및 전환점): \n[결] (카타르시스와 보상): \n\n■ 초반 전개 (1~5화) 요약\n- \n";
-            break;
+            return "■ 핵심 갈등 플롯\n- \n\n■ 기승전결 플롯 (3줄 요약)\n[기] (발단 및 목적 부여): \n[승] (장애물과 시련): \n[전] (위기 및 전환점): \n[결] (카타르시스와 보상): \n\n■ 초반 전개 (1~5화) 요약\n- \n";
         case 'system':
-            template = "■ 주인공의 고유 능력 (치트)\n- \n\n■ 파워 밸런스 / 성장의 척도\n- \n\n■ 세계관 특수 설정 (마법/무공/상태창)\n- \n\n■ 패널티 / 한계점\n- \n";
-            break;
+            return "■ 주인공의 고유 능력 (치트)\n- \n\n■ 파워 밸런스 / 성장의 척도\n- \n\n■ 세계관 특수 설정 (마법/무공/상태창)\n- \n\n■ 패널티 / 한계점\n- \n";
         case 'world':
-            template = "■ 주요 배경/장소\n- \n\n■ 세계관 고유 규칙/상식\n- \n\n■ 주요 세력 및 조직\n- \n";
-            break;
+            return "■ 주요 배경/장소\n- \n\n■ 세계관 고유 규칙/상식\n- \n\n■ 주요 세력 및 조직\n- \n";
         case 'item':
-            template = "■ 핵심 아이템/아티팩트\n- 이름: \n- 등급/가치: \n- 획득 조건: \n- 능력 및 효과: \n- 페널티: \n\n■ 주요 장비 목록\n- \n";
-            break;
+            return "■ 핵심 아이템/아티팩트\n- 이름: \n- 등급/가치: \n- 획득 조건: \n- 능력 및 효과: \n- 페널티: \n\n■ 주요 장비 목록\n- \n";
         case 'timeline':
-            template = "■ 과거 주요 연표\n- [년도/시기]: (사건 내용)\n- [년도/시기]: (사건 내용)\n\n■ 본편 타임라인\n- [에피소드 1]: \n- [에피소드 2]: \n";
-            break;
+            return "■ 과거 주요 연표\n- [년도/시기]: (사건 내용)\n- [년도/시기]: (사건 내용)\n\n■ 본편 타임라인\n- [에피소드 1]: \n- [에피소드 2]: \n";
         case 'character':
-            template = "■ 주인공\n- 이름: \n- 성격/행동 원리: \n- 외형: \n- 핵심 결핍/욕망: \n- 주요 능력: \n\n■ 주요 조력자 1\n- 이름: \n- 주인공과의 관계: \n- 특징: \n\n■ 임시 인물들\n- \n";
-            break;
+            return "■ 주인공\n- 이름: \n- 성격/행동 원리: \n- 외형: \n- 핵심 결핍/욕망: \n- 주요 능력: \n\n■ 주요 조력자 1\n- 이름: \n- 주인공과의 관계: \n- 특징: \n\n■ 임시 인물들\n- \n";
         case 'villain':
-            template = "■ 최종 보스/흑막\n- 정체: \n- 목적: \n- 압도적인 능력/규모: \n\n■ 대립 세력 / 안티고니스트\n- \n\n■ 대립 이유\n- \n";
-            break;
+            return "■ 최종 보스/흑막\n- 정체: \n- 목적: \n- 압도적인 능력/규모: \n\n■ 대립 세력 / 안티고니스트\n- \n\n■ 대립 이유\n- \n";
         case 'structure':
-            template = "■ 어조 및 문체\n- \n\n■ 시점\n- \n\n■ 전개 속도 및 주의사항\n- 웹소설식 짧고 간결한 문장 사용 (2~3문장마다 줄바꿈)\n- 지루한 설명은 빼고 대사와 행동 위주로 전개\n\n■ 회차 끊기 / 클리프행어 지침\n- \n";
-            break;
+            return "■ 어조 및 문체\n- \n\n■ 시점\n- \n\n■ 전개 속도 및 주의사항\n- 웹소설식 짧고 간결한 문장 사용 (2~3문장마다 줄바꿈)\n- 지루한 설명은 빼고 대사와 행동 위주로 전개\n\n■ 회차 끊기 / 클리프행어 지침\n- \n";
         case 'episode':
-            template = "■ [진행 중] 에피소드 개요\n- 메인 목표: \n- 주요 사건: \n- 얻게 되는 보상/카타르시스: \n\n■ 회차별 트리트먼트\n1화: \n2화: \n3화: \n";
-            break;
+            return "■ [진행 중] 에피소드 개요\n- 메인 목표: \n- 주요 사건: \n- 얻게 되는 보상/카타르시스: \n\n■ 회차별 트리트먼트\n1화: \n2화: \n3화: \n";
         default:
-            template = "■ 새로운 설정 항목\n- \n";
-            break;
+            return "■ 새로운 설정 항목\n- \n";
     }
-    
-    // Append or replace? Append with newlines if content exists.
+  };
+
+  const hasTemplate = () => {
+    const template = getCurrentTemplate();
+    const firstLine = template.trim().split('\n')[0];
+    return getFieldValue(activeTab).includes(firstLine);
+  };
+
+  const toggleTemplate = () => {
+    const template = getCurrentTemplate();
     const currentText = getFieldValue(activeTab);
-    const newText = currentText ? currentText + "\n\n" + template : template;
-    updateField(activeTab, newText);
+    const firstLine = template.trim().split('\n')[0];
+    
+    if (currentText.includes(firstLine)) {
+      // 탬플릿 빼기: 이전 상태로 복구하거나 탬플릿 영역만 삭제
+      const prev = previousTextRef.current[activeTab];
+      if (prev !== undefined) {
+        updateField(activeTab, prev);
+      } else {
+        updateField(activeTab, '');
+      }
+    } else {
+      // 탬플릿 넣기
+      previousTextRef.current[activeTab] = currentText;
+      const newText = currentText ? currentText + "\n\n" + template : template;
+      updateField(activeTab, newText);
+    }
   };
 
   const copyToClipboard = async () => {
@@ -244,6 +324,21 @@ export function BiblePanel({ bible, setBible }: BiblePanelProps) {
 
 
   const currentTabInfo = useMemo(() => allTabs.find(t => t.id === activeTab), [allTabs, activeTab]);
+
+  const getPlaceholder = (tabId: string) => {
+    switch (tabId) {
+      case 'logline': return "• [장르] (예: 현대판타지, 회빙환)\n• [제목 추천 후보]\n• [로그라인/1줄 요약] (예: 최하급 헌터가 죽음 직전 과거로 돌아가 모든 걸 씹어먹는 이야기)\n• [기대효과/독자 후킹 포인트] (예: 사이다 전개, 성좌들의 반응)";
+      case 'story': return "• [전반적인 주제]\n• [핵심 시놉시스 (3줄 요약)]\n• [기승전결(플롯) 및 주요 갈등]\n• [1~15화 초반 전개 방향 및 떡밥]";
+      case 'world': return "• [주요 배경/장소]\n• [세계관 고유 규칙/상식]\n• [주요 세력 및 조직]";
+      case 'system': return "• [치트키/사이다 액션 요소]\n• [주인공만의 특별한 능력/상태창/보상 시스템]\n• [세계관 고유의 마법/무공 규칙과 부작용]\n• [상성 및 스펙 밸런스 설정]";
+      case 'item': return "• [핵심 아이템/아티팩트]\n• [주요 장비 목록]";
+      case 'villain': return "• [최종 보스/흑막] (배경, 목적, 행동 이유)\n• [중간 보스 및 안티고니스트]\n• [주인공과의 대립 구조 및 적대 세력(산하 조직)]\n• [위기감 조성 방식]";
+      case 'timeline': return "• [과거 주요 연표]\n• [본편 에피소드 진행 타임라인]";
+      case 'structure': return "• [어조 및 문체] (예: 가독성을 최우선으로, 짧고 간결한 문장, 웹소설식 엔터키 활용)\n• [전개 속도] (예: 지루한 설명은 빼고 대사와 행동 위주로)\n• [시점] (예: 1인칭 주인공 시점, 독백과 내면 심리 적극 활용)\n• [클리프행어/회차 끊기 규칙]";
+      case 'episode': return "• [현재 진행 중인 에피소드 목표]\n• [이 회차의 주요 사건 및 갈등]\n• [주인공이 얻게 되는 보상 혹은 깨달음]\n• [회차별 전개 개요 자유 작성]";
+      default: return "자유롭게 설정 항목을 작성해 보세요.";
+    }
+  };
 
   return (
     <div className="flex-1 flex w-full h-full bg-white overflow-hidden">
@@ -385,16 +480,30 @@ export function BiblePanel({ bible, setBible }: BiblePanelProps) {
           </header>
 
           {/* Action Toolbar */}
-          <div className="border-b border-slate-100 bg-white/50 px-8 py-3 flex flex-wrap items-center justify-between gap-3 shadow-sm z-10 shrink-0">
+          <div className="border-b border-slate-100 bg-white/50 px-8 py-3 flex flex-wrap items-center justify-between gap-3 shadow-sm z-30 shrink-0 relative">
              <p className="text-[13px] text-slate-500 font-medium">자동 양식을 사용하면 틀에 맞춰 쉽게 설정을 정리할 수 있습니다.</p>
-             <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={() => setShowTips(!showTips)} className="text-slate-600 border-slate-200 hover:bg-slate-50 bg-white h-8 text-[13px] hidden xl:flex">
+             <div className="flex gap-2 relative z-40">
+                <Button variant="outline" size="sm" onClick={() => setShowTips(!showTips)} className={`border-slate-200 h-8 text-[13px] flex ${showTips ? 'text-indigo-600 bg-indigo-50 border-indigo-200 hover:bg-indigo-100' : 'text-slate-600 hover:bg-slate-50 bg-white'}`}>
                   {showTips ? <PanelRightClose className="w-3.5 h-3.5 mr-1.5" /> : <PanelRightOpen className="w-3.5 h-3.5 mr-1.5" />}
                   {showTips ? '팁 숨기기' : '팁 보기'}
                 </Button>
-                <div className="w-px h-5 bg-slate-200 mx-1 self-center hidden xl:block"></div>
-                <Button variant="outline" size="sm" onClick={insertTemplate} className="text-indigo-600 border-indigo-200 hover:bg-indigo-50 bg-white h-8 text-[13px]">
-                  <FilePlus className="w-3.5 h-3.5 mr-1.5" /> 템플릿 채우기
+                <div className="w-px h-5 bg-slate-200 mx-1 self-center hidden sm:block"></div>
+                <Button variant="outline" size="sm" onClick={toggleTemplate} className="text-indigo-600 border-indigo-200 hover:bg-indigo-50 bg-white h-8 text-[13px]">
+                  {hasTemplate() ? (
+                    <><FileMinus className="w-3.5 h-3.5 mr-1.5" /> 템플릿 빼기</>
+                  ) : (
+                    <><FilePlus className="w-3.5 h-3.5 mr-1.5" /> 템플릿 넣기</>
+                  )}
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={handleOrganizeDraft} 
+                  disabled={isOrganizing}
+                  className="text-emerald-600 border-emerald-200 hover:bg-emerald-50 bg-white h-8 text-[13px]"
+                >
+                  {isOrganizing ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5 mr-1.5" />}
+                  AI 초안 정리
                 </Button>
                 <Button variant="outline" size="sm" onClick={copyToClipboard} className="text-slate-600 border-slate-200 hover:bg-slate-50 bg-white h-8 text-[13px]">
                   <Copy className="w-3.5 h-3.5 mr-1.5" /> 복사하기
@@ -439,17 +548,7 @@ export function BiblePanel({ bible, setBible }: BiblePanelProps) {
                 ) : (
                   <Textarea 
                     className="flex-1 h-full min-h-[500px] text-[15px] leading-relaxed font-medium bg-white focus-visible:bg-white border-slate-200 shadow-sm resize-none rounded-xl p-8 placeholder:text-slate-300"
-                    placeholder={
-                      activeTab === 'logline' ? "• [장르] (예: 현대판타지, 회빙환)\n• [제목 추천 후보]\n• [로그라인/1줄 요약] (예: 최하급 헌터가 죽음 직전 과거로 돌아가 모든 걸 씹어먹는 이야기)\n• [기대효과/독자 후킹 포인트] (예: 사이다 전개, 성좌들의 반응)" :
-                      activeTab === 'story' ? "• [전반적인 주제]\n• [핵심 시놉시스 (3줄 요약)]\n• [기승전결(플롯) 및 주요 갈등]\n• [1~15화 초반 전개 방향 및 떡밥]" :
-                      activeTab === 'world' ? "• [주요 배경/장소]\n• [세계관 고유 규칙/상식]\n• [주요 세력 및 조직]" :
-                      activeTab === 'system' ? "• [치트키/사이다 액션 요소]\n• [주인공만의 특별한 능력/상태창/보상 시스템]\n• [세계관 고유의 마법/무공 규칙과 부작용]\n• [상성 및 스펙 밸런스 설정]" :
-                      activeTab === 'item' ? "• [핵심 아이템/아티팩트]\n• [주요 장비 목록]" :
-                      activeTab === 'villain' ? "• [최종 보스/흑막] (배경, 목적, 행동 이유)\n• [중간 보스 및 안티고니스트]\n• [주인공과의 대립 구조 및 적대 세력(산하 조직)]\n• [위기감 조성 방식]" :
-                      activeTab === 'timeline' ? "• [과거 주요 연표]\n• [본편 에피소드 진행 타임라인]" :
-                      activeTab === 'structure' ? "• [어조 및 문체] (예: 가독성을 최우선으로, 짧고 간결한 문장, 웹소설식 엔터키 활용)\n• [전개 속도] (예: 지루한 설명은 빼고 대사와 행동 위주로)\n• [시점] (예: 1인칭 주인공 시점, 독백과 내면 심리 적극 활용)\n• [클리프행어/회차 끊기 규칙]" :
-                      "• [현재 진행 중인 에피소드 목표]\n• [이 회차의 주요 사건 및 갈등]\n• [주인공이 얻게 되는 보상 혹은 깨달음]\n• [회차별 전개 개요 자유 작성]"
-                    }
+                    placeholder={getPlaceholder(activeTab)}
                     value={getFieldValue(activeTab)}
                     onChange={(e) => updateField(activeTab, e.target.value)}
                   />
@@ -461,9 +560,17 @@ export function BiblePanel({ bible, setBible }: BiblePanelProps) {
 
         {/* Right Sidebar for Consultant Tips */}
         {showTips && (
-        <div className="w-80 bg-slate-50/50 hidden xl:flex flex-col shrink-0 border-l border-slate-200">
-          <div className="p-6 border-b border-slate-100 bg-white/50">
-            <div className="flex items-center gap-2 text-indigo-700 font-bold mb-1">
+        <>
+          <div className="absolute inset-0 bg-slate-900/10 z-20 xl:hidden backdrop-blur-sm" onClick={() => setShowTips(false)} />
+          <div className="w-80 bg-white xl:bg-slate-50/50 flex flex-col shrink-0 border-l border-slate-200 absolute xl:relative right-0 top-0 bottom-0 z-30 shadow-2xl xl:shadow-none h-full max-w-[85vw]">
+            <div className="p-6 border-b border-slate-100 bg-white/50 relative">
+              <button 
+                onClick={() => setShowTips(false)} 
+                className="absolute top-4 right-4 p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-md xl:hidden"
+              >
+                <X className="w-4 h-4" />
+              </button>
+              <div className="flex items-center gap-2 text-indigo-700 font-bold mb-1 mt-1">
               <Lightbulb className="w-4 h-4 text-amber-500" />
               스토리 컨설턴트 팁
             </div>
@@ -508,24 +615,51 @@ export function BiblePanel({ bible, setBible }: BiblePanelProps) {
                     <Sparkles className="w-4 h-4" /> AI 어시스턴트 활용
                   </h4>
                   <p className="text-[12px] text-slate-600 leading-relaxed mb-4 relative z-10">
-                    현재까지 작성된 바이블 설정을 바탕으로, AI에게 던질 프롬프트를 복사하여 기획안을 확장하거나 시놉시스를 보강해 보세요. 외부 AI 툴(ChatGPT, Claude 등)에 바로 붙여넣어 사용할 수 있습니다.
+                    현재까지 작성된 바이블 설정을 바탕으로, AI가 현재 탭의 내용을 더 구체적이고 매력적으로 발전시킬 아이디어를 제안합니다.
                   </p>
                   <Button 
-                    onClick={() => {
-                      const baseBible = `\n[현재 작성된 설정 바이블]\n- 탭 이름: ${currentTabInfo?.label}\n- 작성 내용:\n${getFieldValue(activeTab)}\n`;
-                      const prompt = `웹소설 작가의 입장에서 다음 설정 내용을 기획하고 있어.\n${baseBible}\n\n이 내용을 바탕으로 [소설 설정 및 시놉시스 빌딩 모드]에 맞추어 내용을 구체화하고, 독자에게 매력적으로 보일 수 있도록 살을 붙여서 아이디어를 3가지 정도 제안해줘. (웹소설 트렌드에 맞는 아이디어로 상세하게)`;
-                      navigator.clipboard.writeText(prompt);
-                      alert('AI 기획 프롬프트가 클립보드에 복사되었습니다! 외부 AI에 붙여넣기 하세요.');
-                    }}
+                    onClick={handleGenerateIdea}
+                    disabled={isGenerating}
                     className="w-full bg-white text-indigo-600 hover:bg-white/80 border border-indigo-200 shadow-sm text-xs font-bold py-2 h-auto relative z-10"
                   >
-                    현재 탭 기반 AI 프롬프트 복사
+                    {isGenerating ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin inline-block" /> : null}
+                    {isGenerating ? '아이디어 도출 중...' : '현재 탭 기반 AI 아이디어 받기'}
                   </Button>
                 </div>
+
+                {aiIdea && (
+                  <div className="mt-4 bg-emerald-50/50 border border-emerald-100 rounded-xl p-4 shadow-sm relative">
+                    <button 
+                      onClick={() => setAiIdea(null)} 
+                      className="absolute top-3 right-3 text-slate-400 hover:text-slate-600"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                    <h4 className="text-[13px] font-bold text-emerald-800 mb-2 flex items-center gap-1.5">
+                      <Sparkles className="w-4 h-4" /> AI 제안
+                    </h4>
+                    <div className="text-[12px] leading-relaxed text-slate-700 whitespace-pre-wrap font-medium">
+                      {aiIdea}
+                    </div>
+                    {aiIdea.includes("초안이 깔끔하게 정리되었습니다") && (
+                      <div className="mt-3">
+                         <Button variant="outline" size="sm" onClick={() => {
+                            if (previousTextRef.current[activeTab + '_ai_backup']) {
+                               updateField(activeTab, previousTextRef.current[activeTab + '_ai_backup']);
+                               setAiIdea(null);
+                            }
+                         }} className="text-emerald-700 border-emerald-200 h-7 text-xs bg-white hover:bg-emerald-50 w-full mt-2 font-semibold">
+                            원본 복구하기
+                         </Button>
+                      </div>
+                    )}
+                  </div>
+                )}
               </motion.div>
             </AnimatePresence>
           </div>
         </div>
+        </>
         )}
       </div>
     </div>
