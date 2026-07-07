@@ -1,4 +1,4 @@
-import React, { useRef, useMemo, useState } from 'react';
+import React, { useRef, useMemo, useState, memo } from 'react';
 import { BibleState, Episode } from '../types';
 import { Button } from './ui/button';
 import { Download, Upload, Trash2, Database, BarChart3, FileText, CheckCircle2, BookOpen } from 'lucide-react';
@@ -10,7 +10,7 @@ interface ToolsPanelProps {
   setEpisodes: (episodes: Episode[]) => void;
 }
 
-export function ToolsPanel({ bible, episodes, setBible, setEpisodes }: ToolsPanelProps) {
+export const ToolsPanel = memo(function ToolsPanel({ bible, episodes, setBible, setEpisodes }: ToolsPanelProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [exportScope, setExportScope] = useState<'all' | 'bible' | 'episodes'>('all');
@@ -320,5 +320,5 @@ export function ToolsPanel({ bible, episodes, setBible, setEpisodes }: ToolsPane
       </div>
     </div>
   );
-}
+});
 

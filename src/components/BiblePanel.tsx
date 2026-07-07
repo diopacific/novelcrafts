@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, memo } from 'react';
 import { BibleState, CustomBibleTab } from '../types';
 import { Button } from './ui/button';
 import { Textarea } from './ui/textarea';
@@ -96,7 +96,7 @@ const TAB_TIPS: Record<string, { title: string; items: string[] }> = {
   }
 };
 
-export function BiblePanel({ bible, setBible }: BiblePanelProps) {
+export const BiblePanel = memo(function BiblePanel({ bible, setBible }: BiblePanelProps) {
   const [activeTab, setActiveTab] = useState<Tab>('story');
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
   const [isAddingTab, setIsAddingTab] = useState(false);
@@ -796,4 +796,4 @@ export function BiblePanel({ bible, setBible }: BiblePanelProps) {
       </div>
     </div>
   );
-}
+});

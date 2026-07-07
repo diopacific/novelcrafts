@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, memo } from 'react';
 import { Book, PenTool, Settings, Archive, TrendingUp, ChevronRight, PlayCircle, Sparkles, BookOpen, Clock, FileText, CheckCircle2, Zap } from 'lucide-react';
 import { Episode, BibleState } from '../types';
 import { motion } from 'motion/react';
@@ -22,7 +22,7 @@ const itemVariants = {
   },
 };
 
-export function Home({ episodes, bible, onNavigate }: { episodes: Episode[], bible: BibleState, onNavigate: (section: 'bible' | 'workspace' | 'tools') => void }) {
+export const Home = memo(function Home({ episodes, bible, onNavigate }: { episodes: Episode[], bible: BibleState, onNavigate: (section: 'bible' | 'workspace' | 'tools') => void }) {
   const totalCharacters = episodes.reduce((acc, ep) => acc + ep.content.length, 0);
   
   // 플랫폼 유료화 평균 기준인 15만자를 1차 목표로 설정
@@ -248,6 +248,6 @@ export function Home({ episodes, bible, onNavigate }: { episodes: Episode[], bib
       </motion.div>
     </div>
   );
-}
+});
 
 

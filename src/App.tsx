@@ -1,14 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, Suspense, lazy } from 'react';
 import { BibleState, Episode } from './types';
-import { BiblePanel } from './components/BiblePanel';
-import { Workspace } from './components/Workspace';
-import { ToolsPanel } from './components/ToolsPanel';
-import { Home } from './components/Home';
 import { Book, PenTool, Settings, LogIn, LogOut, BookOpen, UserCircle2 } from 'lucide-react';
 import { AuthProvider, useAuth } from './AuthContext';
 import { useDbStorage } from './hooks/useDbStorage';
 
 import { PomodoroTimer } from './components/PomodoroTimer';
+
+// Lazy load major components for code-splitting
+const Home = lazy(() => import('./components/Home').then(module => ({ default: module.Home })));
+const BiblePanel = lazy(() => import('./components/BiblePanel').then(module => ({ default: module.BiblePanel })));
+const Workspace = lazy(() => import('./components/Workspace').then(module => ({ default: module.Workspace })));
+const ToolsPanel = lazy(() => import('./components/ToolsPanel').then(module => ({ default: module.ToolsPanel })));
 
 function AppContent() {
   const { user, login, logoutUser } = useAuth();
@@ -116,7 +118,7 @@ function AppContent() {
         {loading ? (
           <div className="flex w-full h-full items-center justify-center text-slate-500">데이터를 불러오는 중입니다...</div>
         ) : (
-          <>
+          <Suspense fallback={<div className="flex w-full h-full items-center justify-center text-slate-500">화면을 불러오는 중입니다...</div>}>
             {currentSection === 'home' && <Home episodes={episodes} bible={bible} onNavigate={requireAuth} />}
             {currentSection === 'bible' && <BiblePanel bible={bible} setBible={setBible} />}
             {currentSection === 'workspace' && <Workspace bible={bible} episodes={episodes} setEpisodes={setEpisodes} />}
@@ -128,7 +130,7 @@ function AppContent() {
                 setEpisodes={setEpisodes} 
               />
             )}
-          </>
+          </Suspense>
         )}
       </main>
       

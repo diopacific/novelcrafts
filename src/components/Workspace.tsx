@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, memo } from 'react';
 import { BibleState, Episode } from '../types';
 import { Button } from './ui/button';
 import { Textarea } from './ui/textarea';
@@ -11,7 +11,7 @@ interface WorkspaceProps {
   setEpisodes: React.Dispatch<React.SetStateAction<Episode[]>>;
 }
 
-export function Workspace({ bible, episodes, setEpisodes }: WorkspaceProps) {
+export const Workspace = memo(function Workspace({ bible, episodes, setEpisodes }: WorkspaceProps) {
   const { user } = useAuth();
   
   const [activeEpisodeId, setActiveEpisodeId] = useState<string | null>('new');
@@ -719,5 +719,5 @@ export function Workspace({ bible, episodes, setEpisodes }: WorkspaceProps) {
       </div>
     </div>
   );
-}
+});
 
