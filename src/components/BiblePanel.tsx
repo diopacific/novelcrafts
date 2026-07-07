@@ -358,83 +358,204 @@ export function BiblePanel({ bible, setBible }: BiblePanelProps) {
           </Button>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-4 py-4 space-y-1 custom-scrollbar">
-          {isAddingTab && (
-            <div className="p-3 mb-2 bg-indigo-50 border border-indigo-100 rounded-xl flex items-center gap-2">
-              <input 
-                type="text" 
-                placeholder="새로운 탭 이름" 
-                className="w-full text-sm px-2 py-1.5 rounded bg-white border border-indigo-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                value={newTabLabel}
-                onChange={e => setNewTabLabel(e.target.value)}
-                onKeyDown={e => { if (e.key === 'Enter') addCustomTab(); else if (e.key === 'Escape') setIsAddingTab(false); }}
-                autoFocus
-              />
-              <button onClick={addCustomTab} className="p-1.5 bg-indigo-600 text-white rounded hover:bg-indigo-700">
-                <Check className="w-4 h-4" />
-              </button>
-              <button onClick={() => setIsAddingTab(false)} className="p-1.5 bg-white text-slate-400 border border-slate-200 rounded hover:bg-slate-50">
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-          )}
-
-          {allTabs.map((tab) => (
-            <div key={tab.id} className="relative group">
-              <button
-                onClick={() => setActiveTab(tab.id)}
-                className={`w-full text-left p-4 rounded-xl transition-all flex items-start gap-4 ${
-                  activeTab === tab.id 
-                  ? 'bg-white text-indigo-600 shadow-md ring-1 ring-slate-200/50' 
-                  : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100/50'
-                }`}
-              >
-                <div className={`mt-0.5 ${activeTab === tab.id ? 'text-indigo-500' : 'text-slate-400'}`}>
-                  {tab.icon}
-                </div>
-                <div className="flex-1 overflow-hidden">
-                  <div className="flex items-center justify-between mb-1">
-                    {editingTabId === tab.id ? (
-                      <div className="flex items-center gap-1 w-full mr-2" onClick={e => e.stopPropagation()}>
-                        <input 
-                          type="text" 
-                          className="w-full text-[14px] px-1 py-0.5 rounded border border-indigo-300 focus:outline-none focus:ring-1 focus:ring-indigo-500 text-slate-800 font-bold"
-                          value={editTabLabel}
-                          onChange={e => setEditTabLabel(e.target.value)}
-                          onKeyDown={e => { if (e.key === 'Enter') saveEditTab(); else if (e.key === 'Escape') setEditingTabId(null); }}
-                          autoFocus
-                        />
-                        <button onClick={saveEditTab} className="text-indigo-600 hover:text-indigo-800 p-0.5"><Check className="w-3.5 h-3.5" /></button>
-                      </div>
-                    ) : (
-                      <span className={`block font-bold text-[15px] truncate pr-2 ${activeTab === tab.id ? 'text-indigo-700' : 'text-slate-700'}`}>
+        <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4 custom-scrollbar">
+          {/* 그룹 1: 기본 설정 */}
+          <div className="space-y-1">
+            <div className="px-3 pb-2 text-[11px] font-bold tracking-wider text-slate-400">기본 기획</div>
+            {allTabs.filter(t => ['logline', 'story', 'structure'].includes(t.id)).map((tab) => (
+              <div key={tab.id} className="relative group">
+                <button
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`w-full text-left p-3.5 rounded-xl transition-all flex items-start gap-3.5 ${
+                    activeTab === tab.id 
+                    ? 'bg-white text-indigo-600 shadow-md ring-1 ring-slate-200/50' 
+                    : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100/50'
+                  }`}
+                >
+                  <div className={`mt-0.5 ${activeTab === tab.id ? 'text-indigo-500' : 'text-slate-400'}`}>
+                    {tab.icon}
+                  </div>
+                  <div className="flex-1 overflow-hidden">
+                    <div className="flex items-center justify-between mb-0.5">
+                      <span className={`block font-bold text-[14px] truncate pr-2 ${activeTab === tab.id ? 'text-indigo-700' : 'text-slate-700'}`}>
                         {tab.label}
                       </span>
-                    )}
-                    {getFieldValue(tab.id).trim().length > 0 && !editingTabId && (
-                      <span className="shrink-0 bg-indigo-50 border border-indigo-100/50 text-indigo-600 text-[10px] font-bold px-1.5 py-0.5 rounded flex items-center gap-1">
-                        <CheckCircle2 className="w-3 h-3" /> 작 성
-                      </span>
-                    )}
+                      {getFieldValue(tab.id).trim().length > 0 && (
+                        <span className="shrink-0 bg-indigo-50 border border-indigo-100/50 text-indigo-600 text-[10px] font-bold px-1.5 py-0.5 rounded flex items-center gap-1">
+                          <CheckCircle2 className="w-3 h-3" />
+                        </span>
+                      )}
+                    </div>
+                    <span className={`block text-[12px] font-medium leading-snug truncate pr-6 ${activeTab === tab.id ? 'text-indigo-600/70' : 'text-slate-400'}`}>
+                      {tab.description}
+                    </span>
                   </div>
-                  <span className={`block text-[13px] font-medium leading-snug truncate pr-6 ${activeTab === tab.id ? 'text-indigo-600/70' : 'text-slate-500'}`}>
-                    {tab.description}
-                  </span>
-                </div>
-              </button>
-              
-              {'isCustom' in tab && tab.isCustom && activeTab === tab.id && !editingTabId && (
-                <div className="absolute right-2 top-11 flex items-center gap-1">
-                  <button onClick={(e) => { e.stopPropagation(); setEditingTabId(tab.id); setEditTabLabel(tab.label); }} className="p-1 text-slate-300 hover:text-indigo-500 transition-colors" title="이름 변경">
-                    <Edit2 className="w-3 h-3" />
-                  </button>
-                  <button onClick={(e) => { e.stopPropagation(); deleteCustomTab(tab.id); }} className="p-1 text-slate-300 hover:text-red-500 transition-colors" title="삭제">
-                    <Trash2 className="w-3 h-3" />
-                  </button>
-                </div>
-              )}
+                </button>
+              </div>
+            ))}
+          </div>
+
+          {/* 그룹 2: 상세 설정 */}
+          <div className="space-y-1">
+            <div className="px-3 pb-2 text-[11px] font-bold tracking-wider text-slate-400 pt-2 border-t border-slate-100">세계관 및 캐릭터</div>
+            {allTabs.filter(t => ['world', 'system', 'item', 'character', 'villain'].includes(t.id)).map((tab) => (
+              <div key={tab.id} className="relative group">
+                <button
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`w-full text-left p-3.5 rounded-xl transition-all flex items-start gap-3.5 ${
+                    activeTab === tab.id 
+                    ? 'bg-white text-indigo-600 shadow-md ring-1 ring-slate-200/50' 
+                    : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100/50'
+                  }`}
+                >
+                  <div className={`mt-0.5 ${activeTab === tab.id ? 'text-indigo-500' : 'text-slate-400'}`}>
+                    {tab.icon}
+                  </div>
+                  <div className="flex-1 overflow-hidden">
+                    <div className="flex items-center justify-between mb-0.5">
+                      <span className={`block font-bold text-[14px] truncate pr-2 ${activeTab === tab.id ? 'text-indigo-700' : 'text-slate-700'}`}>
+                        {tab.label}
+                      </span>
+                      {getFieldValue(tab.id).trim().length > 0 && (
+                        <span className="shrink-0 bg-indigo-50 border border-indigo-100/50 text-indigo-600 text-[10px] font-bold px-1.5 py-0.5 rounded flex items-center gap-1">
+                          <CheckCircle2 className="w-3 h-3" />
+                        </span>
+                      )}
+                    </div>
+                    <span className={`block text-[12px] font-medium leading-snug truncate pr-6 ${activeTab === tab.id ? 'text-indigo-600/70' : 'text-slate-400'}`}>
+                      {tab.description}
+                    </span>
+                  </div>
+                </button>
+              </div>
+            ))}
+          </div>
+
+          {/* 그룹 3: 에피소드 진행 */}
+          <div className="space-y-1">
+            <div className="px-3 pb-2 text-[11px] font-bold tracking-wider text-slate-400 pt-2 border-t border-slate-100">전개 및 타임라인</div>
+            {allTabs.filter(t => ['timeline', 'episode'].includes(t.id)).map((tab) => (
+              <div key={tab.id} className="relative group">
+                <button
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`w-full text-left p-3.5 rounded-xl transition-all flex items-start gap-3.5 ${
+                    activeTab === tab.id 
+                    ? 'bg-white text-indigo-600 shadow-md ring-1 ring-slate-200/50' 
+                    : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100/50'
+                  }`}
+                >
+                  <div className={`mt-0.5 ${activeTab === tab.id ? 'text-indigo-500' : 'text-slate-400'}`}>
+                    {tab.icon}
+                  </div>
+                  <div className="flex-1 overflow-hidden">
+                    <div className="flex items-center justify-between mb-0.5">
+                      <span className={`block font-bold text-[14px] truncate pr-2 ${activeTab === tab.id ? 'text-indigo-700' : 'text-slate-700'}`}>
+                        {tab.label}
+                      </span>
+                      {getFieldValue(tab.id).trim().length > 0 && (
+                        <span className="shrink-0 bg-indigo-50 border border-indigo-100/50 text-indigo-600 text-[10px] font-bold px-1.5 py-0.5 rounded flex items-center gap-1">
+                          <CheckCircle2 className="w-3 h-3" />
+                        </span>
+                      )}
+                    </div>
+                    <span className={`block text-[12px] font-medium leading-snug truncate pr-6 ${activeTab === tab.id ? 'text-indigo-600/70' : 'text-slate-400'}`}>
+                      {tab.description}
+                    </span>
+                  </div>
+                </button>
+              </div>
+            ))}
+          </div>
+
+          {/* 그룹 4: 커스텀 탭 */}
+          <div className="space-y-1">
+            <div className="px-3 pb-2 text-[11px] font-bold tracking-wider text-slate-400 pt-2 border-t border-slate-100 flex items-center justify-between">
+              <span>커스텀 항목</span>
             </div>
-          ))}
+            
+            {isAddingTab && (
+              <div className="p-3 mb-2 bg-indigo-50 border border-indigo-100 rounded-xl flex items-center gap-2">
+                <input 
+                  type="text" 
+                  placeholder="새로운 탭 이름" 
+                  className="w-full text-sm px-2 py-1.5 rounded bg-white border border-indigo-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  value={newTabLabel}
+                  onChange={e => setNewTabLabel(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') addCustomTab(); else if (e.key === 'Escape') setIsAddingTab(false); }}
+                  autoFocus
+                />
+                <button onClick={addCustomTab} className="p-1.5 bg-indigo-600 text-white rounded hover:bg-indigo-700">
+                  <Check className="w-4 h-4" />
+                </button>
+                <button onClick={() => setIsAddingTab(false)} className="p-1.5 bg-white text-slate-400 border border-slate-200 rounded hover:bg-slate-50">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            )}
+
+            {allTabs.filter(t => 'isCustom' in t && t.isCustom).map((tab) => (
+              <div key={tab.id} className="relative group">
+                <button
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`w-full text-left p-3.5 rounded-xl transition-all flex items-start gap-3.5 ${
+                    activeTab === tab.id 
+                    ? 'bg-white text-indigo-600 shadow-md ring-1 ring-slate-200/50' 
+                    : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100/50'
+                  }`}
+                >
+                  <div className={`mt-0.5 ${activeTab === tab.id ? 'text-indigo-500' : 'text-slate-400'}`}>
+                    {tab.icon}
+                  </div>
+                  <div className="flex-1 overflow-hidden">
+                    <div className="flex items-center justify-between mb-0.5">
+                      {editingTabId === tab.id ? (
+                        <div className="flex items-center gap-1 w-full mr-2" onClick={e => e.stopPropagation()}>
+                          <input 
+                            type="text" 
+                            className="w-full text-[13px] px-1 py-0.5 rounded border border-indigo-300 focus:outline-none focus:ring-1 focus:ring-indigo-500 text-slate-800 font-bold"
+                            value={editTabLabel}
+                            onChange={e => setEditTabLabel(e.target.value)}
+                            onKeyDown={e => { if (e.key === 'Enter') saveEditTab(); else if (e.key === 'Escape') setEditingTabId(null); }}
+                            autoFocus
+                          />
+                          <button onClick={saveEditTab} className="text-indigo-600 hover:text-indigo-800 p-0.5"><Check className="w-3.5 h-3.5" /></button>
+                        </div>
+                      ) : (
+                        <span className={`block font-bold text-[14px] truncate pr-2 ${activeTab === tab.id ? 'text-indigo-700' : 'text-slate-700'}`}>
+                          {tab.label}
+                        </span>
+                      )}
+                      {getFieldValue(tab.id).trim().length > 0 && !editingTabId && (
+                        <span className="shrink-0 bg-indigo-50 border border-indigo-100/50 text-indigo-600 text-[10px] font-bold px-1.5 py-0.5 rounded flex items-center gap-1">
+                          <CheckCircle2 className="w-3 h-3" />
+                        </span>
+                      )}
+                    </div>
+                    <span className={`block text-[12px] font-medium leading-snug truncate pr-6 ${activeTab === tab.id ? 'text-indigo-600/70' : 'text-slate-400'}`}>
+                      {tab.description}
+                    </span>
+                  </div>
+                </button>
+                
+                {'isCustom' in tab && tab.isCustom && activeTab === tab.id && !editingTabId && (
+                  <div className="absolute right-2 top-9 flex items-center gap-1">
+                    <button onClick={(e) => { e.stopPropagation(); setEditingTabId(tab.id); setEditTabLabel(tab.label); }} className="p-1 text-slate-300 hover:text-indigo-500 transition-colors" title="이름 변경">
+                      <Edit2 className="w-3 h-3" />
+                    </button>
+                    <button onClick={(e) => { e.stopPropagation(); deleteCustomTab(tab.id); }} className="p-1 text-slate-300 hover:text-red-500 transition-colors" title="삭제">
+                      <Trash2 className="w-3 h-3" />
+                    </button>
+                  </div>
+                )}
+              </div>
+            ))}
+            
+            {allTabs.filter(t => 'isCustom' in t && t.isCustom).length === 0 && !isAddingTab && (
+              <div className="text-center p-4 rounded-xl border border-dashed border-slate-200 text-slate-400 text-[12px] font-medium">
+                우측 상단 '추가' 버튼을 눌러<br/>커스텀 탭을 만들 수 있습니다.
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -511,7 +632,7 @@ export function BiblePanel({ bible, setBible }: BiblePanelProps) {
              </div>
           </div>
 
-          <div className="flex-1 p-8 overflow-y-auto custom-scrollbar bg-slate-50/30">
+          <div className="flex-1 p-8 overflow-y-auto custom-scrollbar bg-slate-50/50">
             <AnimatePresence mode="wait">
               <motion.div 
                 key={activeTab} 
@@ -523,20 +644,26 @@ export function BiblePanel({ bible, setBible }: BiblePanelProps) {
               >
                 {activeTab === 'character' ? (
                   <div className="flex flex-col gap-6 h-full w-full">
-                    <Textarea 
-                      className="flex-1 min-h-[300px] text-[15px] leading-relaxed font-medium bg-white focus-visible:bg-white border-slate-200 shadow-sm resize-none rounded-xl p-8 placeholder:text-slate-300"
-                      placeholder={"• [주인공] (이름, 외양, 결핍, 성격, 행동 원리, 전투 스펙, 치트 능력)\n• [주요 조력자/동료] (이름, 능력, 주인공과의 관계)\n• [실시간 관계도 시각화]\n텍스트에 'A -> B : 관계' 또는 '이름: A' 형식으로 작성하면 하단에 노드 관계도가 실시간으로 생성됩니다."}
-                      value={getFieldValue(activeTab)}
-                      onChange={(e) => updateField(activeTab, e.target.value)}
-                    />
-                    <div className="h-[350px] shrink-0 flex flex-col mt-4 bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm relative">
-                      <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px] opacity-30"></div>
+                    <div className="flex-1 min-h-[300px] relative">
+                      <div className="absolute top-0 left-0 bottom-0 w-12 bg-slate-100/50 border-r border-slate-200/50 pointer-events-none rounded-l-2xl z-10 flex flex-col items-center py-4 space-y-6 text-slate-300">
+                        {/* Fake line numbers for styling */}
+                        {[1, 2, 3, 4, 5, 6, 7].map(i => <span key={i} className="text-[10px] font-mono">{i}</span>)}
+                      </div>
+                      <Textarea 
+                        className="w-full h-full text-[15px] leading-[1.8] font-medium bg-white focus-visible:bg-white focus-visible:ring-1 focus-visible:ring-indigo-500/20 border-slate-200 shadow-sm resize-none rounded-2xl py-6 pr-6 pl-16 placeholder:text-slate-300 custom-scrollbar relative z-0"
+                        placeholder={"• [주인공] (이름, 외양, 결핍, 성격, 행동 원리, 전투 스펙, 치트 능력)\n• [주요 조력자/동료] (이름, 능력, 주인공과의 관계)\n• [실시간 관계도 시각화]\n텍스트에 'A -> B : 관계' 또는 '이름: A' 형식으로 작성하면 하단에 노드 관계도가 실시간 생성됩니다."}
+                        value={getFieldValue(activeTab)}
+                        onChange={(e) => updateField(activeTab, e.target.value)}
+                      />
+                    </div>
+                    <div className="h-[350px] shrink-0 flex flex-col bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm relative">
+                      <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px] opacity-40"></div>
                       <div className="px-5 py-3 border-b border-slate-100 bg-slate-50/80 flex justify-between items-center relative z-10">
                         <h3 className="text-[13px] font-bold text-slate-700 flex items-center gap-2">
                           <Users className="w-4 h-4 text-indigo-500" />
                           실시간 인물 노드 관계도
                         </h3>
-                        <span className="text-[11px] text-slate-400 font-medium bg-slate-100/50 px-2 py-0.5 rounded border border-slate-200/50">
+                        <span className="text-[11px] text-slate-400 font-medium bg-white px-2 py-0.5 rounded border border-slate-200/50 shadow-sm">
                           ( A {"->"} B : 관계 ) 형식으로 시각화됩니다
                         </span>
                       </div>
@@ -546,12 +673,17 @@ export function BiblePanel({ bible, setBible }: BiblePanelProps) {
                     </div>
                   </div>
                 ) : (
-                  <Textarea 
-                    className="flex-1 h-full min-h-[500px] text-[15px] leading-relaxed font-medium bg-white focus-visible:bg-white border-slate-200 shadow-sm resize-none rounded-xl p-8 placeholder:text-slate-300"
-                    placeholder={getPlaceholder(activeTab)}
-                    value={getFieldValue(activeTab)}
-                    onChange={(e) => updateField(activeTab, e.target.value)}
-                  />
+                  <div className="flex-1 h-full relative group">
+                    <div className="absolute top-0 left-0 bottom-0 w-12 bg-slate-100/50 border-r border-slate-200/50 pointer-events-none rounded-l-2xl z-10 flex flex-col items-center py-4 space-y-6 text-slate-300">
+                      {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13].map(i => <span key={i} className="text-[10px] font-mono">{i}</span>)}
+                    </div>
+                    <Textarea 
+                      className="w-full h-full min-h-[500px] text-[15px] leading-[1.8] font-medium bg-white focus-visible:bg-white focus-visible:ring-1 focus-visible:ring-indigo-500/20 border-slate-200 shadow-sm resize-none rounded-2xl py-6 pr-6 pl-16 placeholder:text-slate-300 custom-scrollbar relative z-0"
+                      placeholder={getPlaceholder(activeTab)}
+                      value={getFieldValue(activeTab)}
+                      onChange={(e) => updateField(activeTab, e.target.value)}
+                    />
+                  </div>
                 )}
               </motion.div>
             </AnimatePresence>

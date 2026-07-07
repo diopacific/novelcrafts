@@ -76,13 +76,31 @@ export function CharacterGraph({ text }: CharacterGraphProps) {
       .force('center', d3.forceCenter(width / 2, height / 2))
       .force('collide', d3.forceCollide().radius(40));
 
+    // Defs for shadow
+    const defs = svg.append('defs');
+    const filter = defs.append('filter')
+      .attr('id', 'drop-shadow')
+      .attr('height', '130%');
+    filter.append('feGaussianBlur')
+      .attr('in', 'SourceAlpha')
+      .attr('stdDeviation', 2)
+      .attr('result', 'blur');
+    filter.append('feOffset')
+      .attr('in', 'blur')
+      .attr('dx', 1)
+      .attr('dy', 2)
+      .attr('result', 'offsetBlur');
+    const feMerge = filter.append('feMerge');
+    feMerge.append('feMergeNode').attr('in', 'offsetBlur');
+    feMerge.append('feMergeNode').attr('in', 'SourceGraphic');
+
     // Arrow markers
-    svg.append('defs').selectAll('marker')
+    defs.selectAll('marker')
       .data(['end'])
       .enter().append('marker')
       .attr('id', String)
       .attr('viewBox', '0 -5 10 10')
-      .attr('refX', 25)
+      .attr('refX', 28)
       .attr('refY', 0)
       .attr('markerWidth', 6)
       .attr('markerHeight', 6)
@@ -100,6 +118,15 @@ export function CharacterGraph({ text }: CharacterGraphProps) {
       .attr('stroke-width', 2)
       .attr('marker-end', 'url(#end)');
 
+    // Link labels background
+    const linkLabelBg = svg.append('g')
+      .selectAll('rect')
+      .data(graphLinks)
+      .enter().append('rect')
+      .attr('fill', 'rgba(255,255,255,0.8)')
+      .attr('rx', 4)
+      .attr('ry', 4);
+
     // Link labels
     const linkLabel = svg.append('g')
       .selectAll('text')
@@ -107,7 +134,7 @@ export function CharacterGraph({ text }: CharacterGraphProps) {
       .enter().append('text')
       .attr('fill', '#64748b')
       .attr('font-size', '11px')
-      .attr('font-weight', '500')
+      .attr('font-weight', '600')
       .attr('text-anchor', 'middle')
       .text(d => d.label);
 
@@ -116,6 +143,7 @@ export function CharacterGraph({ text }: CharacterGraphProps) {
       .selectAll('g')
       .data(graphNodes)
       .enter().append('g')
+      .style('cursor', 'grab')
       .call(d3.drag<SVGGElement, GraphNode>()
         .on('start', dragstarted)
         .on('drag', dragged)
@@ -123,16 +151,17 @@ export function CharacterGraph({ text }: CharacterGraphProps) {
 
     // Node circles
     node.append('circle')
-      .attr('r', 20)
-      .attr('fill', d => d.group === 0 ? '#f1f5f9' : d.group === 1 ? '#e0e7ff' : '#ffe4e6')
-      .attr('stroke', d => d.group === 0 ? '#cbd5e1' : d.group === 1 ? '#818cf8' : '#fb7185')
-      .attr('stroke-width', 2);
+      .attr('r', 24)
+      .attr('fill', d => d.group === 0 ? '#f8fafc' : d.group === 1 ? '#e0e7ff' : '#ffe4e6')
+      .attr('stroke', d => d.group === 0 ? '#e2e8f0' : d.group === 1 ? '#818cf8' : '#fb7185')
+      .attr('stroke-width', 2.5)
+      .style('filter', 'url(#drop-shadow)');
 
     // Node texts
     node.append('text')
       .attr('dy', 4)
       .attr('font-size', '13px')
-      .attr('font-weight', 'bold')
+      .attr('font-weight', '700')
       .attr('text-anchor', 'middle')
       .attr('fill', '#334155')
       .text(d => d.label);
@@ -147,6 +176,12 @@ export function CharacterGraph({ text }: CharacterGraphProps) {
       linkLabel
         .attr('x', d => ((d.source as any as GraphNode).x! + (d.target as any as GraphNode).x!) / 2)
         .attr('y', d => ((d.source as any as GraphNode).y! + (d.target as any as GraphNode).y!) / 2 - 5);
+
+      linkLabelBg
+        .attr('x', d => ((d.source as any as GraphNode).x! + (d.target as any as GraphNode).x!) / 2 - 20)
+        .attr('y', d => ((d.source as any as GraphNode).y! + (d.target as any as GraphNode).y!) / 2 - 15)
+        .attr('width', 40)
+        .attr('height', 16);
 
       node
         .attr('transform', d => `translate(${d.x},${d.y})`);

@@ -307,48 +307,59 @@ export function Workspace({ bible, episodes, setEpisodes }: WorkspaceProps) {
   };
 
   return (
-    <div className="flex-1 flex flex-col w-full h-full bg-white overflow-hidden">
+    <div className="flex-1 flex flex-col w-full h-full bg-[#f8fafc] overflow-hidden">
       
       {/* Header */}
       {!isFullscreen && (
-        <header className="h-[72px] shrink-0 bg-white border-b border-slate-200 px-8 flex items-center justify-between shadow-sm z-10 sticky top-0">
+        <header className="h-[72px] shrink-0 bg-white border-b border-slate-200 px-6 md:px-8 flex items-center justify-between shadow-sm z-10 sticky top-0">
           <div className="flex flex-col">
-            <h1 className="text-xl font-bold tracking-tight text-slate-800">회차 보관함</h1>
-            <p className="text-sm text-slate-500">원고를 체계적으로 관리하고 편집하세요.</p>
+            <h1 className="text-xl font-black tracking-tight text-slate-800 flex items-center gap-2">
+              <PenTool className="w-5 h-5 text-indigo-600" />
+              회차 보관함
+            </h1>
+            <p className="text-[13px] font-medium text-slate-500 mt-0.5">원고를 체계적으로 작성하고 관리하세요.</p>
           </div>
           <div className="flex items-center gap-3">
-            <div className="flex flex-col items-end mr-4 hidden md:flex">
-              <span className="text-[11px] font-bold text-slate-500 mb-1">유료화 목표 (15만자) 달성률 {progressPercent}%</span>
-              <div className="w-32 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+            <div className="flex flex-col items-end mr-6 hidden md:flex">
+              <div className="flex items-center justify-between w-full mb-1.5">
+                <span className="text-[11px] font-bold text-slate-500">유료화 목표 (15만자)</span>
+                <span className="text-[11px] font-black text-emerald-600">{progressPercent}%</span>
+              </div>
+              <div className="w-40 h-2 bg-slate-100 rounded-full overflow-hidden shadow-inner">
                 <div 
-                  className="h-full bg-gradient-to-r from-emerald-400 to-emerald-600 rounded-full"
+                  className="h-full bg-gradient-to-r from-emerald-400 to-emerald-500 rounded-full transition-all duration-1000 relative"
                   style={{ width: `${progressPercent}%` }}
-                />
+                >
+                  <div className="absolute inset-0 bg-white/20" style={{ backgroundImage: 'linear-gradient(45deg, rgba(255,255,255,.15) 25%, transparent 25%, transparent 50%, rgba(255,255,255,.15) 50%, rgba(255,255,255,.15) 75%, transparent 75%, transparent)' }}></div>
+                </div>
               </div>
             </div>
-            <div className="hidden lg:flex items-center gap-2 mr-2">
-              <Button variant="outline" size="sm" onClick={() => generatePrompt('continue')} className="border-indigo-200 text-indigo-700 hover:bg-indigo-50" title="다음 화 이어쓰기 프롬프트 복사">
-                 <Sparkles className="w-4 h-4 mr-1.5" /> 이어쓰기 AI
+            
+            <div className="hidden lg:flex items-center gap-2 mr-2 bg-slate-50 p-1 rounded-lg border border-slate-200/60">
+              <Button variant="ghost" size="sm" onClick={() => generatePrompt('continue')} className="text-[12px] text-slate-600 hover:text-indigo-600 hover:bg-white h-7 px-2.5 font-bold" title="외부 AI용 이어쓰기 프롬프트 복사">
+                 <Sparkles className="w-3.5 h-3.5 mr-1.5 text-indigo-400" /> 이어쓰기 프롬프트
               </Button>
-              <Button variant="outline" size="sm" onClick={() => generatePrompt('interactive')} className="border-indigo-200 text-indigo-700 hover:bg-indigo-50" title="인터랙티브 소설 게임 프롬프트 복사">
-                 <Sparkles className="w-4 h-4 mr-1.5" /> 소설 게임 AI
+              <div className="w-px h-4 bg-slate-200"></div>
+              <Button variant="ghost" size="sm" onClick={() => generatePrompt('interactive')} className="text-[12px] text-slate-600 hover:text-indigo-600 hover:bg-white h-7 px-2.5 font-bold" title="외부 AI용 소설 게임 프롬프트 복사">
+                 <Sparkles className="w-3.5 h-3.5 mr-1.5 text-indigo-400" /> 게임 프롬프트
               </Button>
             </div>
+
             <Button 
               variant="outline" 
               size="sm" 
-              className={`border-indigo-200 ${showSearchReplace ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600 hover:text-indigo-600 hover:bg-slate-50'}`}
+              className={`border-slate-200 shadow-sm ${showSearchReplace ? 'bg-indigo-50 text-indigo-700 border-indigo-200' : 'text-slate-600 hover:text-indigo-600 hover:bg-slate-50'}`}
               onClick={() => setShowSearchReplace(!showSearchReplace)}
             >
-              <Replace className="w-4 h-4 mr-1.5" /> 전체 단어 치환
+              <Replace className="w-4 h-4 md:mr-1.5" /> <span className="hidden md:inline">단어 치환</span>
             </Button>
             <Button 
               variant="outline" 
               size="sm" 
-              className={`border-indigo-200 ${showQuickBible ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600 hover:text-indigo-600 hover:bg-slate-50'}`}
+              className={`border-slate-200 shadow-sm ${showQuickBible ? 'bg-indigo-50 text-indigo-700 border-indigo-200' : 'text-slate-600 hover:text-indigo-600 hover:bg-slate-50'}`}
               onClick={() => setShowQuickBible(!showQuickBible)}
             >
-              <BookOpen className="w-4 h-4 mr-1.5" /> 설정집 퀵뷰
+              <BookOpen className="w-4 h-4 md:mr-1.5" /> <span className="hidden md:inline">설정 퀵뷰</span>
             </Button>
           </div>
         </header>
@@ -358,86 +369,97 @@ export function Workspace({ bible, episodes, setEpisodes }: WorkspaceProps) {
       <div className="flex-1 flex overflow-hidden">
         
         {/* Left Sidebar: Episode List */}
-        <div className={`w-80 bg-slate-50 border-r border-slate-200 flex flex-col shrink-0 transition-transform ${isFullscreen ? 'hidden' : 'flex'}`}>
-          <div className="p-4 border-b border-slate-200 bg-slate-50">
+        <div className={`w-[300px] bg-white border-r border-slate-200 flex flex-col shrink-0 transition-transform ${isFullscreen ? 'hidden' : 'flex'} z-10 shadow-[4px_0_24px_rgba(0,0,0,0.02)]`}>
+          <div className="p-5 border-b border-slate-100 bg-white">
             <Button 
               onClick={() => setActiveEpisodeId('new')}
-              className={`w-full py-5 text-[15px] shadow-sm font-bold flex items-center justify-center gap-2 ${activeEpisodeId === 'new' ? 'bg-indigo-600 text-white hover:bg-indigo-700' : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-100'}`}
+              className={`w-full py-6 text-[14px] shadow-sm font-bold flex items-center justify-center gap-2 rounded-xl transition-all duration-200 ${activeEpisodeId === 'new' ? 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-indigo-200' : 'bg-slate-900 text-white hover:bg-slate-800 hover:-translate-y-0.5'}`}
             >
-              <PenTool className="w-4 h-4" /> 제 {nextEpisodeNum} 화 새로 쓰기
+              <Plus className="w-4 h-4" /> 제 {nextEpisodeNum}화 쓰기
             </Button>
             
-            <div className="mt-4 relative">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <div className="mt-5 relative">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
               <input 
                 type="text"
-                placeholder="회차 검색..."
+                placeholder="회차 내용 검색..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-9 pr-4 py-2 w-full text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+                className="pl-10 pr-4 py-2.5 w-full text-[13px] border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 bg-slate-50 transition-all font-medium"
               />
             </div>
             
-            <div className="flex gap-1 mt-3 overflow-x-auto pb-1 custom-scrollbar">
+            <div className="flex gap-1.5 mt-4 overflow-x-auto pb-1 custom-scrollbar">
               {['all', 'draft', 'revision', 'completed'].map((status) => (
                 <button
                   key={status}
                   onClick={() => setStatusFilter(status as any)}
-                  className={`px-3 py-1 text-[11px] font-bold rounded-full whitespace-nowrap transition-colors ${
+                  className={`px-3.5 py-1.5 text-[12px] font-bold rounded-lg whitespace-nowrap transition-all ${
                     statusFilter === status 
-                      ? 'bg-slate-800 text-white' 
-                      : 'bg-white text-slate-500 border border-slate-200 hover:bg-slate-100'
+                      ? 'bg-slate-800 text-white shadow-sm' 
+                      : 'bg-white text-slate-500 border border-slate-200 hover:bg-slate-50'
                   }`}
                 >
-                  {status === 'all' ? '전체' : status === 'draft' ? '초고' : status === 'revision' ? '수정중' : '완성'}
+                  {status === 'all' ? '전체 보기' : status === 'draft' ? '초안' : status === 'revision' ? '퇴고 중' : '탈고 완료'}
                 </button>
               ))}
             </div>
           </div>
           
-          <div className="flex-1 overflow-y-auto px-2 py-3 space-y-1.5 custom-scrollbar">
+          <div className="flex-1 overflow-y-auto px-3 py-4 space-y-2 custom-scrollbar bg-slate-50/50">
             {filteredEpisodes.length === 0 ? (
-              <p className="text-center text-sm text-slate-400 mt-10">내용이 없습니다.</p>
+              <div className="flex flex-col items-center justify-center text-center text-sm text-slate-400 mt-12 space-y-3">
+                <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center">
+                  <FileText className="w-5 h-5 text-slate-300" />
+                </div>
+                <p>작성된 회차가 없습니다.</p>
+              </div>
             ) : (
               filteredEpisodes.map((ep) => (
                 <div 
                   key={ep.id}
                   onClick={() => setActiveEpisodeId(ep.id)}
-                  className={`p-4 rounded-xl cursor-pointer border transition-all text-left group ${
+                  className={`p-4 rounded-2xl cursor-pointer border transition-all text-left group relative ${
                     activeEpisodeId === ep.id 
-                    ? 'border-indigo-300 bg-indigo-50/50 shadow-sm ring-1 ring-indigo-500/20' 
-                    : 'border-transparent hover:border-slate-300 hover:bg-white'
+                    ? 'border-indigo-200 bg-white shadow-md ring-1 ring-indigo-500/10 scale-[1.02]' 
+                    : 'border-slate-200 bg-white hover:border-indigo-300 hover:shadow-sm'
                   }`}
                 >
-                  <div className="flex items-start justify-between mb-1.5">
-                    <span className={`text-[15px] font-bold ${activeEpisodeId === ep.id ? 'text-indigo-900' : 'text-slate-800'}`}>
+                  <div className="flex items-start justify-between mb-2">
+                    <span className={`text-[15px] font-black tracking-tight ${activeEpisodeId === ep.id ? 'text-indigo-700' : 'text-slate-800'}`}>
                       {ep.number}화
                     </span>
-                    <div className="flex items-center gap-2">
-                       <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${
+                    <div className="flex items-center gap-1.5">
+                       <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
                          ep.status === 'completed' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' :
                          ep.status === 'revision' ? 'bg-amber-50 text-amber-600 border-amber-200' :
-                         'bg-slate-50 text-slate-600 border-slate-200'
+                         'bg-slate-50 text-slate-500 border-slate-200'
                        }`}>
-                         {ep.status === 'completed' ? '완성' : ep.status === 'revision' ? '수정' : '초고'}
+                         {ep.status === 'completed' ? '완성' : ep.status === 'revision' ? '퇴고' : '초안'}
                        </span>
-                       <div className="flex opacity-0 group-hover:opacity-100 transition-opacity">
-                         <button onClick={(e) => moveEpisode(filteredEpisodes.findIndex(e => e.id === ep.id), 'up', e)} className="text-slate-300 hover:text-indigo-500 p-0.5">
-                           <ChevronUp className="w-3.5 h-3.5" />
-                         </button>
-                         <button onClick={(e) => moveEpisode(filteredEpisodes.findIndex(e => e.id === ep.id), 'down', e)} className="text-slate-300 hover:text-indigo-500 p-0.5">
-                           <ChevronDown className="w-3.5 h-3.5" />
-                         </button>
-                         <button onClick={(e) => deleteEpisode(ep.id, e)} className="text-slate-300 hover:text-red-500 ml-1 p-0.5">
-                           <Trash2 className="w-3.5 h-3.5" />
-                         </button>
-                       </div>
                     </div>
                   </div>
-                  <h4 className="text-[13px] font-medium text-slate-600 truncate">{ep.direction || '제목 없음'}</h4>
-                  <p className="text-[11px] text-slate-400 mt-2 font-mono flex items-center">
-                    <FileText className="w-3 h-3 mr-1" /> {ep.content.length.toLocaleString()}자
-                  </p>
+                  <h4 className="text-[13px] font-bold text-slate-600 truncate mb-2">{ep.direction || '제목 미정'}</h4>
+                  <div className="flex items-center justify-between">
+                    <p className="text-[11px] text-slate-400 font-mono font-medium flex items-center bg-slate-50 px-2 py-0.5 rounded-md w-fit">
+                      {ep.content.length.toLocaleString()} 자
+                    </p>
+                    
+                    {/* Hover Actions */}
+                    <div className="flex items-center bg-white shadow-sm border border-slate-100 rounded-md opacity-0 group-hover:opacity-100 transition-opacity absolute right-3 bottom-3">
+                      <button onClick={(e) => moveEpisode(filteredEpisodes.findIndex(e => e.id === ep.id), 'up', e)} className="text-slate-400 hover:text-indigo-600 p-1 hover:bg-slate-50 rounded-l-md transition-colors">
+                        <ChevronUp className="w-3.5 h-3.5" />
+                      </button>
+                      <div className="w-px h-3 bg-slate-200"></div>
+                      <button onClick={(e) => moveEpisode(filteredEpisodes.findIndex(e => e.id === ep.id), 'down', e)} className="text-slate-400 hover:text-indigo-600 p-1 hover:bg-slate-50 transition-colors">
+                        <ChevronDown className="w-3.5 h-3.5" />
+                      </button>
+                      <div className="w-px h-3 bg-slate-200"></div>
+                      <button onClick={(e) => deleteEpisode(ep.id, e)} className="text-slate-400 hover:text-red-500 p-1 hover:bg-red-50 rounded-r-md transition-colors">
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
                 </div>
               ))
             )}
@@ -445,181 +467,197 @@ export function Workspace({ bible, episodes, setEpisodes }: WorkspaceProps) {
         </div>
 
         {/* Right Editor Area */}
-        <div className="flex-1 flex flex-col bg-white overflow-hidden relative">
+        <div className="flex-1 flex flex-col overflow-hidden relative bg-[#f1f5f9]">
           
           {/* Find/Replace Top Banner */}
           {showSearchReplace && (
-            <div className="bg-indigo-50 border-b border-indigo-100 p-4 shrink-0 flex items-center gap-3 w-full animate-in slide-in-from-top-2">
-              <Replace className="w-5 h-5 text-indigo-500 hidden sm:block" />
-              <input type="text" placeholder="기존 단어" className="h-9 px-3 text-sm rounded bg-white border border-indigo-200 focus:ring-1 focus:ring-indigo-500 outline-none flex-1 max-w-[200px]" value={searchTarget} onChange={e => setSearchTarget(e.target.value)} />
-              <span className="text-indigo-300"><ChevronRight className="w-4 h-4"/></span>
-              <input type="text" placeholder="새 단어" className="h-9 px-3 text-sm rounded bg-white border border-indigo-200 focus:ring-1 focus:ring-indigo-500 outline-none flex-1 max-w-[200px]" value={replaceValue} onChange={e => setReplaceValue(e.target.value)} />
-              <Button size="sm" onClick={executeGlobalReplace} disabled={!searchTarget} className="bg-indigo-600 text-white hover:bg-indigo-700 h-9 shrink-0">일괄 변경 실행</Button>
+            <div className="bg-white border-b border-slate-200 p-3 shrink-0 flex items-center gap-3 w-full animate-in slide-in-from-top-2 shadow-sm z-20 absolute top-0 left-0 right-0">
+              <Replace className="w-4 h-4 text-indigo-500 hidden sm:block ml-2" />
+              <input type="text" placeholder="찾을 단어" className="h-8 px-3 text-[13px] font-medium rounded-lg bg-slate-50 border border-slate-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 outline-none flex-1 max-w-[200px]" value={searchTarget} onChange={e => setSearchTarget(e.target.value)} />
+              <span className="text-slate-300"><ChevronRight className="w-4 h-4"/></span>
+              <input type="text" placeholder="바꿀 단어" className="h-8 px-3 text-[13px] font-medium rounded-lg bg-slate-50 border border-slate-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 outline-none flex-1 max-w-[200px]" value={replaceValue} onChange={e => setReplaceValue(e.target.value)} />
+              <Button size="sm" onClick={executeGlobalReplace} disabled={!searchTarget} className="bg-indigo-600 text-white hover:bg-indigo-700 h-8 shrink-0 text-[12px] font-bold px-4 rounded-lg">일괄 변경</Button>
               <div className="flex-1" />
-              <button onClick={() => setShowSearchReplace(false)} className="text-indigo-400 hover:text-indigo-700"><X className="w-5 h-5" /></button>
+              <button onClick={() => setShowSearchReplace(false)} className="text-slate-400 hover:text-slate-700 mr-2 bg-slate-100 p-1 rounded-md"><X className="w-4 h-4" /></button>
             </div>
           )}
 
           {/* Tools Area */}
-          <div className="border-b border-slate-100 px-8 py-3 flex justify-between items-center bg-white shrink-0 shadow-[0_4px_20px_rgb(0,0,0,0.02)] z-10">
+          <div className={`border-b border-slate-200 px-6 py-2.5 flex justify-between items-center bg-white shrink-0 z-10 transition-all ${showSearchReplace ? 'mt-[57px]' : ''}`}>
             <div className="flex items-center gap-3">
-               <span className="text-sm font-bold text-slate-800">
-                 {activeEpisodeId === 'new' ? `새 제 ${nextEpisodeNum} 화 기획 및 작성` : `제 ${activeEpInfo?.number} 화 편집`}
+               <span className="text-[14px] font-black text-slate-800">
+                 {activeEpisodeId === 'new' ? `제 ${nextEpisodeNum}화 기획 및 작성` : `제 ${activeEpInfo?.number}화 편집`}
                </span>
-               <span className={`text-[11px] px-2 py-0.5 rounded-full font-bold ${
+               <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold transition-colors ${
                  saveStatus === 'saved' ? 'bg-slate-100 text-slate-500' : 
-                 saveStatus === 'saving' ? 'bg-indigo-100 text-indigo-500' : 
+                 saveStatus === 'saving' ? 'bg-indigo-100 text-indigo-600' : 
                  'bg-amber-100 text-amber-600'
                }`}>
                  {saveStatus === 'saved' ? '저장됨' : saveStatus === 'saving' ? '저장 중...' : '저장 안 됨 (Ctrl+S)'}
                </span>
             </div>
             
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
               {/* Text Tools Group */}
-              <div className="flex items-center gap-1.5 border-r border-slate-200 pr-4">
-                <div className="hidden sm:flex items-center bg-slate-50 border border-slate-200 rounded-md overflow-hidden h-8 mr-1">
-                  <button onClick={() => setEditorFontSize(f => Math.max(12, f - 2))} className="px-2.5 text-slate-500 hover:text-slate-800 hover:bg-slate-200 font-bold" title="글꼴 작게">A-</button>
+              <div className="flex items-center gap-1.5 border-r border-slate-200 pr-3">
+                <div className="hidden sm:flex items-center bg-slate-50 border border-slate-200 rounded-lg overflow-hidden h-7.5 mr-1">
+                  <button onClick={() => setEditorFontSize(f => Math.max(12, f - 2))} className="px-2.5 h-full text-slate-500 hover:text-indigo-600 hover:bg-slate-100 font-bold transition-colors" title="글꼴 작게">A-</button>
                   <div className="w-px h-4 bg-slate-200"></div>
-                  <button onClick={() => setEditorFontSize(f => Math.min(24, f + 2))} className="px-2.5 text-slate-500 hover:text-slate-800 hover:bg-slate-200 font-bold text-sm" title="글꼴 크게">A+</button>
+                  <button onClick={() => setEditorFontSize(f => Math.min(24, f + 2))} className="px-2.5 h-full text-slate-500 hover:text-indigo-600 hover:bg-slate-100 font-bold text-[13px] transition-colors" title="글꼴 크게">A+</button>
                 </div>
-                <Button variant="outline" size="sm" onClick={() => setFormState(f => ({...f, content: cleanAIText(f.content)}))} className="h-8 border-slate-200 text-slate-600 hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200" title="텍스트 정제">
-                  <Wand2 className="w-3.5 h-3.5" />
+                <Button variant="ghost" size="sm" onClick={() => setFormState(f => ({...f, content: cleanAIText(f.content)}))} className="h-8 w-8 p-0 text-slate-500 hover:bg-indigo-50 hover:text-indigo-600" title="AI 생성 텍스트 서식 정리">
+                  <Wand2 className="w-4 h-4" />
                 </Button>
-                <Button variant="outline" size="sm" onClick={() => copyToClipboard(formState.content)} className="h-8 border-slate-200 text-slate-600 hover:bg-slate-50 hidden sm:flex" title="복사">
-                  <Copy className="w-3.5 h-3.5" />
+                <Button variant="ghost" size="sm" onClick={() => copyToClipboard(formState.content)} className="h-8 w-8 p-0 text-slate-500 hover:bg-slate-100 hidden sm:flex" title="본문 복사">
+                  <Copy className="w-4 h-4" />
                 </Button>
-                <Button variant="outline" size="sm" onClick={downloadEpisode} className="h-8 border-slate-200 text-slate-600 hover:bg-slate-50 hidden sm:flex" title="TXT 다운로드">
-                  <FileText className="w-3.5 h-3.5" />
-                </Button>
-              </div>
-
-              {/* AI Tools Group */}
-              <div className="flex items-center gap-1.5 border-r border-slate-200 pr-4">
-                <Button variant="outline" size="sm" onClick={handleAiAutocomplete} disabled={isGenerating} className="h-8 border-indigo-200 text-indigo-600 hover:bg-indigo-50 hover:border-indigo-300">
-                  {isGenerating ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5 mr-1.5" />} 
-                  AI 이어쓰기
-                </Button>
-                <Button variant="outline" size="sm" onClick={handleAiFeedback} disabled={isGenerating} className="h-8 border-emerald-200 text-emerald-600 hover:bg-emerald-50 hover:border-emerald-300">
-                  {isGenerating ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : <MessageSquare className="w-3.5 h-3.5 mr-1.5" />}
-                  AI 피드백
+                <Button variant="ghost" size="sm" onClick={downloadEpisode} className="h-8 w-8 p-0 text-slate-500 hover:bg-slate-100 hidden sm:flex" title="TXT 파일로 다운로드">
+                  <FileText className="w-4 h-4" />
                 </Button>
               </div>
 
               {/* Action Group */}
               <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" onClick={() => setIsFullscreen(!isFullscreen)} className={`h-8 border-slate-200 ${isFullscreen ? 'bg-slate-800 text-white hover:bg-slate-700' : 'text-slate-600 hover:bg-slate-50'}`} title="전체화면 집중 모드">
+                <Button variant="outline" size="sm" onClick={() => setIsFullscreen(!isFullscreen)} className={`h-8 border-slate-200 rounded-lg font-bold text-[12px] transition-colors ${isFullscreen ? 'bg-slate-800 text-white hover:bg-slate-700' : 'text-slate-600 hover:bg-slate-50'}`} title="전체화면 집중 모드">
                   {isFullscreen ? <Minimize2 className="w-3.5 h-3.5 mr-1.5" /> : <Maximize2 className="w-3.5 h-3.5 mr-1.5" />}
                   {isFullscreen ? '일반 모드' : '집중 모드'}
                 </Button>
-                <Button size="sm" onClick={handleSave} className="h-8 bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm">
-                  <Save className="w-4 h-4 mr-1.5" /> 저장
+                <Button size="sm" onClick={handleSave} className="h-8 bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm rounded-lg font-bold text-[12px] transition-colors">
+                  <Save className="w-3.5 h-3.5 mr-1.5" /> 원고 저장
                 </Button>
               </div>
             </div>
           </div>
 
           <div className="flex-1 overflow-y-auto w-full custom-scrollbar scroll-smooth">
-            <div className={`mx-auto ${isFullscreen ? 'w-full max-w-6xl px-12 py-10' : 'max-w-4xl px-8 py-8'} space-y-6 pb-32 transition-all duration-300`}>
+            <div className={`mx-auto ${isFullscreen ? 'w-full max-w-5xl px-8 py-10' : 'max-w-4xl px-6 py-8'} space-y-6 pb-32 transition-all duration-300`}>
               
-              <div className="flex gap-4">
+              {/* Episode Metadata Form */}
+              <div className="flex flex-col sm:flex-row gap-4 bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
                 <div className="flex-1 space-y-2">
-                  <label className="text-[13px] font-bold text-slate-700 block">회차 제목 / 목표 메모</label>
+                  <label className="text-[12px] font-black text-slate-400 uppercase tracking-wider block">회차 제목 / 목표 메모</label>
                   <input 
                     type="text"
-                    placeholder="(선택) 이 회차의 부제나 달성 목표를 적어보세요"
-                    className="w-full text-lg font-bold px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-300 transition-colors"
+                    placeholder="예: 각성 후 첫 전투 씬, 무조건 사이다 전개"
+                    className="w-full text-lg font-bold px-1 py-1 bg-transparent border-none focus:outline-none focus:ring-0 placeholder:text-slate-300 text-slate-800"
                     value={formState.direction}
                     onChange={(e) => handleContentChange('direction', e.target.value)}
                   />
+                  <div className="h-px w-full bg-slate-100"></div>
                 </div>
-                <div className="w-40 shrink-0 space-y-2 hidden sm:block">
-                  <label className="text-[13px] font-bold text-slate-700 block">상태</label>
+                <div className="w-full sm:w-40 shrink-0 space-y-2">
+                  <label className="text-[12px] font-black text-slate-400 uppercase tracking-wider block">현재 상태</label>
                   <select 
-                    className="w-full text-sm font-medium border border-slate-200 rounded-xl py-3 px-3 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
+                    className="w-full text-[13px] font-bold border-none rounded-lg py-2 px-3 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 text-slate-700 cursor-pointer hover:bg-slate-100 transition-colors"
                     value={formState.status}
                     onChange={(e) => handleContentChange('status', e.target.value)}
                   >
-                    <option value="draft">초고</option>
-                    <option value="revision">수정중</option>
-                    <option value="completed">완성</option>
+                    <option value="draft">📝 초안 작성중</option>
+                    <option value="revision">✍️ 퇴고 진행중</option>
+                    <option value="completed">✅ 탈고 완료</option>
                   </select>
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <label className="text-[13px] font-bold text-slate-700 block">본문 원고</label>
+              {/* Main Editor */}
+              <div className="space-y-3 relative group">
+                <div className="flex items-end justify-between px-2">
+                  <div className="flex items-center gap-2">
+                    <label className="text-[13px] font-black text-slate-700 block tracking-tight">본문 원고</label>
+                    <span className="text-[11px] text-slate-400 font-medium">연재 권장 분량: 5,500자</span>
+                  </div>
                   <div className="flex items-center gap-3">
                     <div className="flex items-center gap-1.5 w-32 hidden sm:flex" title="목표 글자수 (5500자)">
-                      <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                      <div className="flex-1 h-1.5 bg-slate-200/60 rounded-full overflow-hidden">
                         <div 
-                          className={`h-full rounded-full transition-all ${formState.content.length >= 5500 ? 'bg-emerald-500' : 'bg-indigo-500'}`}
+                          className={`h-full rounded-full transition-all duration-500 ${formState.content.length >= 5500 ? 'bg-emerald-500' : 'bg-indigo-500'}`}
                           style={{ width: `${Math.min(100, (formState.content.length / 5500) * 100)}%` }}
                         />
                       </div>
                     </div>
-                    <span className="text-[11px] font-mono font-bold bg-slate-100 text-slate-500 px-2.5 py-1 rounded-lg border border-slate-200 shadow-sm">
-                      {formState.content.length.toLocaleString()} 자 (<span className="opacity-70">공백제외 </span>{formState.content.replace(/\s/g, '').length.toLocaleString()} 자)
+                    <span className="text-[12px] font-mono font-bold bg-white text-slate-600 px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm flex items-center gap-1.5 transition-colors">
+                      <span className={`${formState.content.length >= 5500 ? 'text-emerald-600' : ''}`}>{formState.content.length.toLocaleString()}</span> 자
+                      <span className="text-slate-300">|</span>
+                      <span className="text-[10px] text-slate-400 mt-0.5">공백제외 {formState.content.replace(/\s/g, '').length.toLocaleString()}</span>
                     </span>
                   </div>
                 </div>
-                <Textarea 
-                  className={`${isFullscreen ? 'min-h-[calc(100vh-300px)] h-[calc(100vh-300px)]' : 'min-h-[500px] h-[500px]'} bg-white border border-slate-200 focus:border-indigo-300 focus:ring-4 focus:ring-indigo-500/10 font-medium leading-[2] font-serif shadow-sm resize-y transition-all rounded-xl p-6`}
-                  style={{ fontSize: `${editorFontSize}px` }}
-                  value={formState.content}
-                  onChange={(e) => handleContentChange('content', e.target.value)}
-                  placeholder="당신의 빛나는 이야기를 시작해 보세요..."
-                />
+
+                <div className="relative">
+                  <div className="absolute top-0 left-0 bottom-0 w-12 bg-slate-50 border-r border-slate-100 pointer-events-none rounded-l-2xl z-10 flex flex-col items-center py-6 space-y-[26px] text-slate-300 hidden sm:flex">
+                    {/* Visual fake line numbers to give it a manuscript feel */}
+                    {Array.from({length: 30}).map((_, i) => <span key={i} className="text-[10px] font-mono opacity-50">{i + 1}</span>)}
+                  </div>
+                  
+                  <Textarea 
+                    className={`${isFullscreen ? 'min-h-[calc(100vh-240px)] h-[calc(100vh-240px)]' : 'min-h-[600px] h-[600px]'} w-full bg-white border border-slate-200 focus:border-indigo-300 focus:ring-4 focus:ring-indigo-500/10 font-medium leading-[2.2] text-slate-800 shadow-md resize-y transition-all rounded-2xl py-6 pr-8 pl-6 sm:pl-16 placeholder:text-slate-300 custom-scrollbar relative z-0`}
+                    style={{ fontSize: `${editorFontSize}px`, wordBreak: 'keep-all' }}
+                    value={formState.content}
+                    onChange={(e) => handleContentChange('content', e.target.value)}
+                    placeholder="독자를 사로잡을 첫 문장을 입력하세요..."
+                  />
+                  
+                  {/* Floating AI Tools Toolbar (Appears on focus/hover in a real app, placed statically here) */}
+                  <div className="absolute bottom-6 right-8 flex flex-col gap-2 opacity-30 group-hover:opacity-100 transition-opacity z-20">
+                     <Button 
+                       size="sm" 
+                       onClick={handleAiAutocomplete} 
+                       disabled={isGenerating} 
+                       className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg rounded-full px-4 py-5 font-bold flex items-center gap-2 transform transition-transform hover:scale-105"
+                     >
+                       {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />} 
+                       AI 이어쓰기
+                     </Button>
+                     <Button 
+                       size="sm" 
+                       onClick={handleAiFeedback} 
+                       disabled={isGenerating} 
+                       className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg rounded-full px-4 py-5 font-bold flex items-center gap-2 transform transition-transform hover:scale-105"
+                     >
+                       {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <MessageSquare className="w-4 h-4" />}
+                       AI 편집자 피드백
+                     </Button>
+                  </div>
+                </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-slate-100">
-                <div className="space-y-2">
-                  <label className="text-[13px] font-bold text-slate-700 flex items-center gap-1.5"><ListFilter className="w-4 h-4 text-slate-400"/> 회차 요약</label>
+              {/* AI Feedback Display */}
+              {aiFeedback && (
+                <div className="animate-in fade-in slide-in-from-bottom-4 mt-6">
+                  <div className="bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-200/60 rounded-2xl p-6 shadow-sm relative overflow-hidden">
+                    <div className="absolute top-0 left-0 w-1 h-full bg-emerald-500"></div>
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-[14px] font-black text-emerald-800 flex items-center gap-2">
+                        <MessageSquare className="w-4 h-4" /> 담당 편집자 피드백
+                      </h3>
+                      <button onClick={() => setAiFeedback(null)} className="text-emerald-400 hover:text-emerald-700 bg-white rounded-full p-1 shadow-sm transition-colors"><X className="w-4 h-4" /></button>
+                    </div>
+                    <div className="text-[14px] leading-[1.8] text-emerald-950/80 whitespace-pre-wrap font-medium">
+                      {aiFeedback}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Footer Meta Textareas */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6">
+                <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 group focus-within:border-indigo-300 focus-within:ring-2 focus-within:ring-indigo-500/10 transition-all">
+                  <label className="text-[13px] font-black text-slate-700 flex items-center gap-1.5 mb-3"><ListFilter className="w-4 h-4 text-indigo-500"/> 핵심 요약 (시놉시스)</label>
                   <Textarea 
-                    className="h-28 text-[13px] leading-relaxed bg-white border border-slate-200 focus:border-indigo-300 focus:ring-4 focus:ring-indigo-500/10 shadow-sm rounded-xl p-4 transition-all"
-                    placeholder="나중 검색과 흐름 파악을 위해 핵심 사건을 요약해 두면 편리합니다."
+                    className="h-28 text-[13px] leading-relaxed bg-transparent border-none focus:ring-0 p-0 resize-none placeholder:text-slate-400 font-medium text-slate-600 custom-scrollbar"
+                    placeholder="나중 검색과 흐름 파악을 위해 핵심 사건을 1~2줄로 요약해 두면 편리합니다. (예: 아카데미 입학식, 첫 번째 기연 획득)"
                     value={formState.summary}
                     onChange={(e) => handleContentChange('summary', e.target.value)}
                   />
                 </div>
-                <div className="space-y-2">
-                  <label className="text-[13px] font-bold text-slate-700 flex items-center gap-1.5"><PenTool className="w-4 h-4 text-indigo-400"/> 작가의 말 / 메모</label>
+                <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 group focus-within:border-emerald-300 focus-within:ring-2 focus-within:ring-emerald-500/10 transition-all">
+                  <label className="text-[13px] font-black text-slate-700 flex items-center gap-1.5 mb-3"><PenTool className="w-4 h-4 text-emerald-500"/> 작가의 말 & 메모</label>
                   <Textarea 
-                    className="h-28 text-[13px] leading-relaxed bg-white border border-indigo-100 focus:border-indigo-300 focus:ring-4 focus:ring-indigo-500/10 shadow-sm rounded-xl p-4 transition-all"
-                    placeholder="업로드 시 덧붙일 작가의 말이나, 개인적인 수정 아이디어를 기록합니다."
+                    className="h-28 text-[13px] leading-relaxed bg-transparent border-none focus:ring-0 p-0 resize-none placeholder:text-slate-400 font-medium text-slate-600 custom-scrollbar"
+                    placeholder="플랫폼 업로드 시 하단에 덧붙일 작가의 말이나, 다음 회차 전개를 위한 개인적인 메모를 기록합니다."
                     value={formState.authorNote}
                     onChange={(e) => handleContentChange('authorNote', e.target.value)}
                   />
-                </div>
-                
-                {/* AI Feedback Panel */}
-                {aiFeedback && (
-                  <div className="col-span-1 md:col-span-2 space-y-2 mt-2 animate-in fade-in slide-in-from-bottom-2">
-                    <div className="flex items-center justify-between">
-                      <label className="text-[13px] font-bold text-emerald-700 flex items-center gap-1.5">
-                        <MessageSquare className="w-4 h-4" /> AI 편집자 피드백
-                      </label>
-                      <button onClick={() => setAiFeedback(null)} className="text-slate-400 hover:text-slate-600"><X className="w-4 h-4" /></button>
-                    </div>
-                    <div className="bg-emerald-50/50 border border-emerald-100 rounded-xl p-5 text-[14px] leading-relaxed text-slate-700 whitespace-pre-wrap font-medium shadow-sm">
-                      {aiFeedback}
-                    </div>
-                  </div>
-                )}
-                
-                {/* Mobile only status select */}
-                <div className="sm:hidden space-y-2">
-                  <label className="text-[13px] font-bold text-slate-700 block">초안 상태 기록</label>
-                  <select 
-                    className="w-full text-sm font-medium border border-slate-200 rounded-lg py-2.5 px-3 bg-slate-50"
-                    value={formState.status}
-                    onChange={(e) => setFormState(f => ({...f, status: e.target.value as any}))}
-                  >
-                    <option value="draft">초고</option>
-                    <option value="revision">수정중</option>
-                    <option value="completed">완성</option>
-                  </select>
                 </div>
               </div>
 
@@ -629,17 +667,17 @@ export function Workspace({ bible, episodes, setEpisodes }: WorkspaceProps) {
 
         {/* Quick Bible Viewer Sidebar */}
         {showQuickBible && (
-          <div className="w-80 shrink-0 bg-white border-l border-slate-200 overflow-y-auto custom-scrollbar flex flex-col items-stretch animate-in slide-in-from-right-4 duration-200 z-20 shadow-xl">
-            <div className="p-5 border-b border-slate-100 flex items-center justify-between sticky top-0 bg-white/95 backdrop-blur z-10 shadow-sm">
-              <h3 className="font-bold text-slate-800 flex items-center">
-                <BookOpen className="w-4 h-4 mr-2 text-indigo-600" />
-                설정집 퀵뷰
+          <div className="w-[320px] shrink-0 bg-[#f8fafc] border-l border-slate-200 overflow-y-auto custom-scrollbar flex flex-col items-stretch animate-in slide-in-from-right-4 duration-200 z-20 shadow-2xl absolute right-0 top-0 bottom-0">
+            <div className="p-5 border-b border-slate-200 flex items-center justify-between sticky top-0 bg-white/95 backdrop-blur z-10 shadow-sm">
+              <h3 className="font-black text-slate-800 flex items-center gap-2">
+                <BookOpen className="w-5 h-5 text-indigo-600" />
+                설정 바이블
               </h3>
-              <button onClick={() => setShowQuickBible(false)} className="text-slate-400 hover:text-slate-600 bg-slate-50 hover:bg-slate-100 p-1.5 rounded-md">
+              <button onClick={() => setShowQuickBible(false)} className="text-slate-400 hover:text-slate-700 bg-slate-100 hover:bg-slate-200 p-1.5 rounded-lg transition-colors">
                 <X className="w-4 h-4" />
               </button>
             </div>
-            <div className="p-5 space-y-6">
+            <div className="p-5 space-y-5">
               {[
                 { title: '핵심/로그라인', content: bible.logline },
                 { title: '스토리', content: bible.story },
@@ -652,26 +690,26 @@ export function Workspace({ bible, episodes, setEpisodes }: WorkspaceProps) {
                 { title: '집필지침', content: bible.structure },
                 { title: '에피소드', content: bible.episode }
               ].map((section, idx) => (
-                <div key={idx} className="space-y-2">
-                  <h4 className="text-[11px] font-black text-slate-500 uppercase tracking-widest">{section.title}</h4>
+                <div key={idx} className="space-y-1.5">
+                  <h4 className="text-[11px] font-black text-indigo-900/60 uppercase tracking-widest bg-indigo-50/50 inline-block px-2 py-0.5 rounded-md">{section.title}</h4>
                   {section.content ? (
-                    <div className="text-[13px] text-slate-700 leading-relaxed font-medium bg-slate-50/80 rounded-xl p-3 border border-slate-100 whitespace-pre-wrap">
+                    <div className="text-[13px] text-slate-700 leading-relaxed font-medium bg-white rounded-xl p-4 border border-slate-200 shadow-sm whitespace-pre-wrap">
                       {section.content}
                     </div>
                   ) : (
-                    <p className="text-[13px] text-slate-400 italic px-1">설정이 없습니다.</p>
+                    <div className="text-[12px] text-slate-400 italic px-2 py-2 bg-slate-100/50 rounded-lg border border-slate-100 border-dashed">미작성</div>
                   )}
                 </div>
               ))}
               {(bible.customTabs || []).map((tab, idx) => (
-                <div key={`c-${idx}`} className="space-y-2">
-                  <h4 className="text-[11px] font-black text-slate-500 uppercase tracking-widest">{tab.label}</h4>
+                <div key={`c-${idx}`} className="space-y-1.5">
+                  <h4 className="text-[11px] font-black text-emerald-900/60 uppercase tracking-widest bg-emerald-50/50 inline-block px-2 py-0.5 rounded-md">{tab.label}</h4>
                   {tab.content ? (
-                    <div className="text-[13px] text-slate-700 leading-relaxed font-medium bg-slate-50/80 rounded-xl p-3 border border-slate-100 whitespace-pre-wrap">
+                    <div className="text-[13px] text-slate-700 leading-relaxed font-medium bg-white rounded-xl p-4 border border-slate-200 shadow-sm whitespace-pre-wrap">
                       {tab.content}
                     </div>
                   ) : (
-                    <p className="text-[13px] text-slate-400 italic px-1">설정이 없습니다.</p>
+                    <div className="text-[12px] text-slate-400 italic px-2 py-2 bg-slate-100/50 rounded-lg border border-slate-100 border-dashed">미작성</div>
                   )}
                 </div>
               ))}
@@ -682,3 +720,4 @@ export function Workspace({ bible, episodes, setEpisodes }: WorkspaceProps) {
     </div>
   );
 }
+

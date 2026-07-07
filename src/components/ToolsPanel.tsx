@@ -131,60 +131,72 @@ export function ToolsPanel({ bible, episodes, setBible, setEpisodes }: ToolsPane
 
   return (
     <div className="flex-1 flex flex-col h-full bg-[#f8fafc] overflow-y-auto w-full custom-scrollbar">
-      <header className="h-[72px] shrink-0 bg-white border-b border-slate-200 px-8 flex items-center shadow-sm z-10 sticky top-0">
-        <h1 className="text-xl font-bold tracking-tight text-slate-800">작품 관리 & 내보내기</h1>
+      <header className="h-[72px] shrink-0 bg-white border-b border-slate-200 px-6 md:px-8 flex items-center shadow-sm z-10 sticky top-0">
+        <h1 className="text-xl font-black tracking-tight text-slate-800 flex items-center gap-2">
+          <Database className="w-5 h-5 text-indigo-600" />
+          데이터 관리 및 내보내기
+        </h1>
       </header>
 
-      <div className="p-8 max-w-4xl mx-auto w-full space-y-8">
+      <div className="p-6 md:p-8 max-w-4xl mx-auto w-full space-y-6 md:space-y-8">
         
         {/* 통계 섹션 */}
-        <section className="bg-white rounded-2xl border border-slate-200 shadow-sm p-8">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center border border-indigo-100">
-              <BarChart3 className="w-5 h-5 text-indigo-600" />
-            </div>
-            <div>
-              <h2 className="text-lg font-bold text-slate-800">작품 집필 통계</h2>
-              <p className="text-sm text-slate-500">현재까지 집필된 플랫폼 연재 기준의 규모를 확인합니다.</p>
-            </div>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            <div className="bg-slate-50 p-6 rounded-xl border border-slate-100 relative overflow-hidden">
-              <span className="text-sm font-semibold text-slate-500 block mb-1 relative z-10">총 누적 회차</span>
-              <span className="text-3xl font-black text-slate-800 relative z-10 flex items-center gap-2">
-                {episodes.length} <span className="text-lg font-bold text-slate-400">화</span>
-              </span>
-              <BookOpen className="w-24 h-24 absolute -right-4 -bottom-4 text-slate-200/50" />
-            </div>
-            <div className="bg-slate-50 p-6 rounded-xl border border-slate-100">
-              <span className="text-[13px] font-semibold text-slate-500 block mb-1">총 글자수 (공백 포함)</span>
-              <span className="text-3xl font-black text-slate-800">{totalCharacters.toLocaleString()} <span className="text-lg font-bold text-slate-400">자</span></span>
-            </div>
-            <div className="bg-slate-50 p-6 rounded-xl border border-slate-100">
-              <span className="text-[13px] font-semibold text-slate-500 block mb-1">총 글자수 (공백 제외)</span>
-              <span className="text-3xl font-black text-indigo-700">{totalCharactersNoSpaces.toLocaleString()} <span className="text-lg font-bold text-slate-400">자</span></span>
-            </div>
-            <div className="bg-slate-50 p-6 rounded-xl border border-slate-100">
-              <span className="text-[13px] font-semibold text-slate-500 block mb-1">회차당 평균 글자수</span>
-              <span className="text-2xl font-black text-emerald-600">{avgCharacters.toLocaleString()} <span className="text-sm font-bold text-slate-400">자/화</span></span>
-            </div>
-          </div>
-
-          <div className="bg-gradient-to-r from-indigo-50 to-blue-50 rounded-xl border border-indigo-100 p-6">
-            <div className="flex justify-between items-end mb-3">
-              <div>
-                <span className="text-sm font-bold text-indigo-900 block mb-1">유료화 전환 목표 (15만자) 달성률</span>
-                <span className="text-[13px] text-indigo-600/80 font-medium tracking-wide">플랫폼 유료화의 평균 기준인 15만자까지 남은 분량입니다.</span>
+        <section className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+          <div className="p-6 md:p-8">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center border border-indigo-100/50">
+                <BarChart3 className="w-5 h-5 text-indigo-600" />
               </div>
-              <span className="text-2xl font-black text-indigo-700 bg-white px-3 py-1 rounded-lg border border-indigo-100 shadow-sm">{progressPercent}%</span>
+              <div>
+                <h2 className="text-[16px] font-black text-slate-800 tracking-tight">작품 집필 통계</h2>
+                <p className="text-[13px] font-medium text-slate-500 mt-0.5">현재까지 집필된 작품의 규모를 확인합니다.</p>
+              </div>
             </div>
-            <div className="h-4 w-full bg-indigo-100/50 rounded-full overflow-hidden border border-indigo-100/50">
-              <div 
-                className="h-full bg-gradient-to-r from-indigo-500 to-blue-600 rounded-full transition-all duration-1000 ease-out relative"
-                style={{ width: `${progressPercent}%` }}
-              >
-                <div className="absolute inset-0 bg-white/20" style={{ backgroundImage: 'linear-gradient(45deg, rgba(255,255,255,.15) 25%, transparent 25%, transparent 50%, rgba(255,255,255,.15) 50%, rgba(255,255,255,.15) 75%, transparent 75%, transparent)' }}></div>
+            
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+              <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100 relative overflow-hidden group hover:border-indigo-200 transition-colors">
+                <span className="text-[12px] font-black text-slate-400 uppercase tracking-wider block mb-1 relative z-10">누적 회차</span>
+                <span className="text-3xl font-black text-slate-800 relative z-10 flex items-baseline gap-1">
+                  {episodes.length} <span className="text-sm font-bold text-slate-400">화</span>
+                </span>
+                <BookOpen className="w-16 h-16 absolute -right-2 -bottom-2 text-slate-200/50 group-hover:text-indigo-100/50 transition-colors" />
+              </div>
+              <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100 group hover:border-indigo-200 transition-colors">
+                <span className="text-[12px] font-black text-slate-400 uppercase tracking-wider block mb-1">총 글자 (공백 포함)</span>
+                <span className="text-3xl font-black text-slate-800 flex items-baseline gap-1">
+                  {totalCharacters.toLocaleString()} <span className="text-sm font-bold text-slate-400">자</span>
+                </span>
+              </div>
+              <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100 group hover:border-indigo-200 transition-colors">
+                <span className="text-[12px] font-black text-slate-400 uppercase tracking-wider block mb-1">총 글자 (공백 제외)</span>
+                <span className="text-3xl font-black text-indigo-600 flex items-baseline gap-1">
+                  {totalCharactersNoSpaces.toLocaleString()} <span className="text-sm font-bold text-indigo-300">자</span>
+                </span>
+              </div>
+              <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100 group hover:border-emerald-200 transition-colors">
+                <span className="text-[12px] font-black text-slate-400 uppercase tracking-wider block mb-1">회차당 평균 분량</span>
+                <span className="text-3xl font-black text-emerald-600 flex items-baseline gap-1">
+                  {avgCharacters.toLocaleString()} <span className="text-sm font-bold text-emerald-300">자/화</span>
+                </span>
+              </div>
+            </div>
+
+            <div className="bg-gradient-to-br from-indigo-50 via-slate-50 to-blue-50/30 rounded-2xl border border-indigo-100 p-6 relative overflow-hidden">
+              <div className="absolute top-0 left-0 w-1 h-full bg-indigo-500"></div>
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end mb-4 gap-4">
+                <div>
+                  <span className="text-[14px] font-black text-indigo-900 block mb-1">유료화 전환 목표 달성률</span>
+                  <span className="text-[12px] text-indigo-600/80 font-medium">플랫폼 런칭 기준인 15만자까지 남은 분량입니다.</span>
+                </div>
+                <span className="text-2xl font-black text-indigo-700 bg-white px-3 py-1 rounded-xl border border-indigo-100 shadow-sm">{progressPercent}%</span>
+              </div>
+              <div className="h-3 w-full bg-white rounded-full overflow-hidden border border-indigo-100 shadow-inner">
+                <div 
+                  className="h-full bg-gradient-to-r from-indigo-400 to-indigo-600 rounded-full transition-all duration-1000 ease-out relative"
+                  style={{ width: `${progressPercent}%` }}
+                >
+                  <div className="absolute inset-0 bg-white/20" style={{ backgroundImage: 'linear-gradient(45deg, rgba(255,255,255,.15) 25%, transparent 25%, transparent 50%, rgba(255,255,255,.15) 50%, rgba(255,255,255,.15) 75%, transparent 75%, transparent)' }}></div>
+                </div>
               </div>
             </div>
           </div>
@@ -192,89 +204,93 @@ export function ToolsPanel({ bible, episodes, setBible, setEpisodes }: ToolsPane
 
         {/* 내보내기 & 백업 섹션 */}
         <section className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-          <div className="p-8 border-b border-slate-100">
+          <div className="p-6 md:p-8 border-b border-slate-100">
             <div className="flex items-center gap-3 mb-6">
-              <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center border border-amber-100">
+              <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center border border-amber-100/50">
                 <FileText className="w-5 h-5 text-amber-600" />
               </div>
               <div>
-                <h2 className="text-lg font-bold text-slate-800">원고 내보내기 (Export)</h2>
-                <p className="text-sm text-slate-500">작업한 원고를 원하는 포맷으로 다른 플랫폼이나 에디터로 옮길 수 있습니다.</p>
+                <h2 className="text-[16px] font-black text-slate-800 tracking-tight">원고 내보내기 (Export)</h2>
+                <p className="text-[13px] font-medium text-slate-500 mt-0.5">작업한 원고를 원하는 포맷으로 추출합니다.</p>
               </div>
             </div>
 
-            <div className="space-y-6 bg-slate-50 border border-slate-100 rounded-xl p-6">
-              <div className="space-y-4">
-                <div className="text-sm font-bold text-slate-700">추출 범위 선택</div>
-                <div className="flex flex-wrap gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50/50 border border-slate-100 rounded-2xl p-6">
+              <div className="space-y-3">
+                <div className="text-[12px] font-black text-slate-400 uppercase tracking-wider">추출 범위 선택</div>
+                <div className="flex flex-col gap-2">
                   {(['all', 'bible', 'episodes'] as const).map((scope) => (
-                    <label key={scope} className={`flex items-center gap-2 cursor-pointer px-4 py-2 rounded-lg border transition-all ${exportScope === scope ? 'bg-indigo-50 border-indigo-200 text-indigo-700' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}>
+                    <label key={scope} className={`flex items-center gap-3 cursor-pointer p-3 rounded-xl border transition-all ${exportScope === scope ? 'bg-indigo-50 border-indigo-200 text-indigo-700 shadow-sm' : 'bg-white border-slate-200 text-slate-600 hover:border-indigo-300'}`}>
                       <input type="radio" className="hidden" checked={exportScope === scope} onChange={() => setExportScope(scope)} />
-                      {exportScope === scope && <CheckCircle2 className="w-4 h-4" />}
-                      <span className="font-semibold text-sm">
-                        {scope === 'all' ? '전체 내보내기' : scope === 'bible' ? '설정집만 내보내기' : '회차만 내보내기'}
+                      <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${exportScope === scope ? 'border-indigo-600' : 'border-slate-300'}`}>
+                        {exportScope === scope && <div className="w-2 h-2 rounded-full bg-indigo-600" />}
+                      </div>
+                      <span className="font-bold text-[13px]">
+                        {scope === 'all' ? '전체 내보내기 (설정 + 회차)' : scope === 'bible' ? '설정집만 내보내기' : '작성된 회차만 내보내기'}
                       </span>
                     </label>
                   ))}
                 </div>
               </div>
 
-              <div className="space-y-4">
-                <div className="text-sm font-bold text-slate-700">파일 형식 선택</div>
-                <div className="flex flex-wrap gap-3">
+              <div className="space-y-3">
+                <div className="text-[12px] font-black text-slate-400 uppercase tracking-wider">파일 형식 선택</div>
+                <div className="flex flex-col gap-2">
                   {(['md', 'txt'] as const).map((format) => (
-                    <label key={format} className={`flex items-center gap-2 cursor-pointer px-4 py-2 rounded-lg border transition-all ${exportFormat === format ? 'bg-indigo-50 border-indigo-200 text-indigo-700' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}>
+                    <label key={format} className={`flex items-center gap-3 cursor-pointer p-3 rounded-xl border transition-all ${exportFormat === format ? 'bg-indigo-50 border-indigo-200 text-indigo-700 shadow-sm' : 'bg-white border-slate-200 text-slate-600 hover:border-indigo-300'}`}>
                       <input type="radio" className="hidden" checked={exportFormat === format} onChange={() => setExportFormat(format)} />
-                      {exportFormat === format && <CheckCircle2 className="w-4 h-4" />}
-                      <span className="font-semibold text-sm">
-                        {format === 'md' ? 'Markdown (.md)' : '일반 텍스트 (.txt)'}
+                      <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${exportFormat === format ? 'border-indigo-600' : 'border-slate-300'}`}>
+                        {exportFormat === format && <div className="w-2 h-2 rounded-full bg-indigo-600" />}
+                      </div>
+                      <span className="font-bold text-[13px]">
+                        {format === 'md' ? '마크다운 형식 (.md)' : '일반 텍스트 (.txt)'}
                       </span>
                     </label>
                   ))}
                 </div>
               </div>
+            </div>
 
-              <div className="flex items-center gap-3 pt-2">
-                <Button onClick={handleExportCustom} className="bg-slate-800 hover:bg-slate-900 text-white w-full sm:w-auto h-11 px-8 rounded-xl font-bold tracking-wide">
-                  <Download className="w-4 h-4 mr-2" /> 파일로 다운로드
-                </Button>
-                <Button variant="outline" onClick={handleCopyCustom} className="bg-white border-slate-200 text-slate-700 hover:bg-slate-50 w-full sm:w-auto h-11 px-8 rounded-xl font-bold tracking-wide">
-                  <FileText className="w-4 h-4 mr-2" /> 클립보드에 복사
-                </Button>
-              </div>
+            <div className="flex flex-col sm:flex-row items-center justify-end gap-3 pt-6">
+              <Button variant="outline" onClick={handleCopyCustom} className="bg-white border-slate-200 text-slate-700 hover:bg-slate-50 w-full sm:w-auto h-11 px-6 rounded-xl font-bold tracking-wide text-[13px]">
+                <FileText className="w-4 h-4 mr-2" /> 클립보드에 복사
+              </Button>
+              <Button onClick={handleExportCustom} className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm w-full sm:w-auto h-11 px-6 rounded-xl font-bold tracking-wide text-[13px]">
+                <Download className="w-4 h-4 mr-2" /> 텍스트 파일로 다운로드
+              </Button>
             </div>
           </div>
 
-          <div className="p-8 bg-slate-50/50">
+          <div className="p-6 md:p-8 bg-slate-50/50">
             <div className="flex items-center gap-3 mb-6">
-              <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center border border-emerald-100">
+              <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center border border-emerald-100/50">
                 <Database className="w-5 h-5 text-emerald-600" />
               </div>
               <div>
-                <h2 className="text-lg font-bold text-slate-800">통합 백업 및 복구</h2>
-                <p className="text-sm text-slate-500">프로젝트의 완벽한 복원을 위한 구조화된 JSON 데이터입니다.</p>
+                <h2 className="text-[16px] font-black text-slate-800 tracking-tight">통합 백업 및 복구</h2>
+                <p className="text-[13px] font-medium text-slate-500 mt-0.5">전체 프로젝트 데이터를 안전하게 보관합니다.</p>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="bg-white border border-emerald-100 rounded-xl p-5 flex flex-col items-start gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div className="bg-white border border-emerald-100 rounded-2xl p-6 flex flex-col items-start gap-4 shadow-sm hover:shadow-md transition-shadow">
                 <div>
-                  <h3 className="font-bold text-slate-800 mb-1">데이터베이스 백업 (JSON)</h3>
-                  <p className="text-[13px] text-slate-500 leading-relaxed">로컬 환경에 프로젝트 전체를 백업합니다. 다른 브라우저나 컴퓨터로 정보를 옮길 때 사용하세요.</p>
+                  <h3 className="font-bold text-slate-800 mb-2">로컬 파일로 백업 (JSON)</h3>
+                  <p className="text-[13px] font-medium text-slate-500 leading-relaxed">프로젝트 전체 데이터를 파일로 저장합니다. 다른 기기로 데이터를 옮길 때 사용하세요.</p>
                 </div>
-                <Button onClick={handleExportJson} className="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 mt-auto shadow-sm">
-                  <Download className="w-4 h-4 mr-2" /> json 백업 파일 저장
+                <Button onClick={handleExportJson} className="w-full bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 mt-auto shadow-sm rounded-xl font-bold text-[13px] h-11">
+                  <Download className="w-4 h-4 mr-2" /> 백업 파일 저장
                 </Button>
               </div>
               
-              <div className="bg-white border border-slate-200 rounded-xl p-5 flex flex-col items-start gap-4">
+              <div className="bg-white border border-slate-200 rounded-2xl p-6 flex flex-col items-start gap-4 shadow-sm hover:shadow-md transition-shadow">
                 <div>
-                  <h3 className="font-bold text-slate-800 mb-1">데이터베이스 복구 (JSON)</h3>
-                  <p className="text-[13px] text-slate-500 leading-relaxed">이전에 받아둔 json 형식의 파일을 업로드하여 프로젝트를 복원합니다. <span className="text-red-500">현재 데이터는 덮어씌워집니다.</span></p>
+                  <h3 className="font-bold text-slate-800 mb-2">백업 파일 복구 (JSON)</h3>
+                  <p className="text-[13px] font-medium text-slate-500 leading-relaxed">보관해둔 백업 파일을 업로드하여 데이터를 복원합니다. <span className="text-red-500 font-bold">현재 데이터는 덮어씌워집니다.</span></p>
                 </div>
                 <input type="file" accept=".json" className="hidden" ref={fileInputRef} onChange={handleImportJson} />
-                <Button variant="outline" onClick={() => fileInputRef.current?.click()} className="bg-white border-slate-200 text-slate-700 mt-auto shadow-sm">
-                  <Upload className="w-4 h-4 mr-2" /> json 파일 불러오기
+                <Button variant="outline" onClick={() => fileInputRef.current?.click()} className="w-full bg-white border-slate-200 text-slate-700 mt-auto shadow-sm hover:bg-slate-50 rounded-xl font-bold text-[13px] h-11">
+                  <Upload className="w-4 h-4 mr-2" /> 백업 파일 불러오기
                 </Button>
               </div>
             </div>
@@ -282,23 +298,27 @@ export function ToolsPanel({ bible, episodes, setBible, setEpisodes }: ToolsPane
         </section>
 
         {/* 위험 구역 */}
-        <section className="bg-red-50/50 rounded-2xl border border-red-100 p-8 mb-8">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 rounded-xl bg-red-100 flex items-center justify-center text-red-600">
-              <Trash2 className="w-5 h-5" />
+        <section className="bg-white rounded-2xl border border-red-200 shadow-sm p-6 md:p-8 mb-8 relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-1 h-full bg-red-500"></div>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center text-red-600 shrink-0">
+                <Trash2 className="w-6 h-6" />
+              </div>
+              <div>
+                <h2 className="text-[16px] font-black text-red-800 tracking-tight">위험 구역 (Danger Zone)</h2>
+                <p className="text-[13px] font-medium text-red-600/80 mt-0.5">현재 보관된 모든 설정과 회차 정보를 영구적으로 삭제합니다.</p>
+              </div>
             </div>
-            <div>
-              <h2 className="text-lg font-bold text-red-800">위험 구역 (Danger Zone)</h2>
-              <p className="text-sm text-red-600/80">현재 계정의 모든 프로젝트 정보를 영구적으로 삭제합니다.</p>
-            </div>
+            
+            <Button onClick={handleResetAll} variant="destructive" className="bg-red-600 hover:bg-red-700 text-white sm:w-auto h-11 px-8 rounded-xl font-bold tracking-wide text-[13px] shrink-0">
+              모든 데이터 초기화
+            </Button>
           </div>
-          
-          <Button onClick={handleResetAll} className="bg-red-600 hover:bg-red-700 text-white w-full sm:w-auto h-12 px-8">
-            모든 데이터 초기화
-          </Button>
         </section>
 
       </div>
     </div>
   );
 }
+

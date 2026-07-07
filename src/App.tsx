@@ -117,7 +117,7 @@ function AppContent() {
           <div className="flex w-full h-full items-center justify-center text-slate-500">데이터를 불러오는 중입니다...</div>
         ) : (
           <>
-            {currentSection === 'home' && <Home episodes={episodes} onNavigate={requireAuth} />}
+            {currentSection === 'home' && <Home episodes={episodes} bible={bible} onNavigate={requireAuth} />}
             {currentSection === 'bible' && <BiblePanel bible={bible} setBible={setBible} />}
             {currentSection === 'workspace' && <Workspace bible={bible} episodes={episodes} setEpisodes={setEpisodes} />}
             {currentSection === 'tools' && (
