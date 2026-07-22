@@ -5,6 +5,7 @@ import { Textarea } from './ui/textarea';
 import { CharacterGraph } from './CharacterGraph';
 import { Book, Users, Map, Swords, Skull, LayoutTemplate, Save, Cloud, Loader2, Zap, Copy, FilePlus, FileMinus, Lightbulb, CheckCircle2, Plus, Trash2, Edit2, Check, X, Sparkles, Globe, Package, Clock, PanelRightClose, PanelRightOpen } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { toast } from '../lib/toast';
 
 interface BiblePanelProps {
   bible: BibleState;
@@ -127,11 +128,11 @@ export const BiblePanel = memo(function BiblePanel({ bible, setBible }: BiblePan
       if (response.ok && data.text) {
         setAiIdea(data.text);
       } else {
-        alert(data.error || 'AI 생성에 실패했습니다.');
+        toast.error(data.error || 'AI 생성에 실패했습니다.');
       }
     } catch (err) {
       console.error(err);
-      alert('오류가 발생했습니다.');
+      toast.error('오류가 발생했습니다.');
     } finally {
       setIsGenerating(false);
     }
@@ -140,7 +141,7 @@ export const BiblePanel = memo(function BiblePanel({ bible, setBible }: BiblePan
   const handleOrganizeDraft = async () => {
     const text = getFieldValue(activeTab);
     if (!text || text.trim().length < 10) {
-      alert('정리할 초안 내용을 최소 10자 이상 입력해주세요.');
+      toast.info('정리할 초안 내용을 최소 10자 이상 입력해주세요.');
       return;
     }
     
@@ -163,11 +164,11 @@ export const BiblePanel = memo(function BiblePanel({ bible, setBible }: BiblePan
         updateField(activeTab, data.organizedText);
         setAiIdea("✨ 초안이 깔끔하게 정리되었습니다.\n\n[편집자 코멘트]\n" + data.feedback + "\n\n💡 마음에 들지 않는다면 하단의 '원본 복구' 버튼을 눌러 되돌릴 수 있습니다.");
       } else {
-        alert(data.error || 'AI 초안 정리에 실패했습니다.');
+        toast.error(data.error || 'AI 초안 정리에 실패했습니다.');
       }
     } catch (err) {
       console.error(err);
-      alert('오류가 발생했습니다.');
+      toast.error('오류가 발생했습니다.');
     } finally {
       setIsOrganizing(false);
     }
@@ -182,6 +183,19 @@ export const BiblePanel = memo(function BiblePanel({ bible, setBible }: BiblePan
     }, 1000);
     return () => clearTimeout(timer);
   }, [bible]);
+
+  // Keyboard shortcut for saving (prevents browser default)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        setSaveStatus('saved');
+        setTimeout(() => setSaveStatus('idle'), 2000);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   const updateField = (field: string, value: string) => {
     if (field.startsWith('custom_')) {
@@ -260,9 +274,9 @@ export const BiblePanel = memo(function BiblePanel({ bible, setBible }: BiblePan
   const copyToClipboard = async () => {
     try {
       await navigator.clipboard.writeText(getFieldValue(activeTab));
-      alert('현재 탭의 내용이 클립보드에 복사되었습니다.');
+      toast.success('현재 탭의 내용이 클립보드에 복사되었습니다.');
     } catch (err) {
-      alert('복사에 실패했습니다.');
+      toast.error('복사에 실패했습니다.');
     }
   };
 
@@ -691,17 +705,30 @@ export const BiblePanel = memo(function BiblePanel({ bible, setBible }: BiblePan
         </div>
 
         {/* Right Sidebar for Consultant Tips */}
-        {showTips && (
-        <>
-          <div className="absolute inset-0 bg-slate-900/10 z-20 xl:hidden backdrop-blur-sm" onClick={() => setShowTips(false)} />
-          <div className="w-80 bg-white xl:bg-slate-50/50 flex flex-col shrink-0 border-l border-slate-200 absolute xl:relative right-0 top-0 bottom-0 z-30 shadow-2xl xl:shadow-none h-full max-w-[85vw]">
-            <div className="p-6 border-b border-slate-100 bg-white/50 relative">
-              <button 
-                onClick={() => setShowTips(false)} 
-                className="absolute top-4 right-4 p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-md xl:hidden"
-              >
-                <X className="w-4 h-4" />
-              </button>
+        <AnimatePresence>
+          {showTips && (
+          <>
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-slate-900/10 z-20 xl:hidden backdrop-blur-sm" 
+              onClick={() => setShowTips(false)} 
+            />
+            <motion.div 
+              initial={{ x: '100%', opacity: 0.5 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: '100%', opacity: 0.5 }}
+              transition={{ type: "spring", stiffness: 300, damping: 30 }}
+              className="w-80 bg-white xl:bg-slate-50/50 flex flex-col shrink-0 border-l border-slate-200 absolute xl:relative right-0 top-0 bottom-0 z-30 shadow-2xl xl:shadow-none h-full max-w-[85vw]"
+            >
+              <div className="p-6 border-b border-slate-100 bg-white/50 relative">
+                <button 
+                  onClick={() => setShowTips(false)} 
+                  className="absolute top-4 right-4 p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-md xl:hidden"
+                >
+                  <X className="w-4 h-4" />
+                </button>
               <div className="flex items-center gap-2 text-indigo-700 font-bold mb-1 mt-1">
               <Lightbulb className="w-4 h-4 text-amber-500" />
               스토리 컨설턴트 팁
@@ -790,9 +817,10 @@ export const BiblePanel = memo(function BiblePanel({ bible, setBible }: BiblePan
               </motion.div>
             </AnimatePresence>
           </div>
-        </div>
+        </motion.div>
         </>
         )}
+        </AnimatePresence>
       </div>
     </div>
   );

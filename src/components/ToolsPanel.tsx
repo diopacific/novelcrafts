@@ -2,6 +2,8 @@ import React, { useRef, useMemo, useState, memo } from 'react';
 import { BibleState, Episode } from '../types';
 import { Button } from './ui/button';
 import { Download, Upload, Trash2, Database, BarChart3, FileText, CheckCircle2, BookOpen } from 'lucide-react';
+import { toast } from '../lib/toast';
+import { motion } from 'motion/react';
 
 interface ToolsPanelProps {
   bible: BibleState;
@@ -9,6 +11,19 @@ interface ToolsPanelProps {
   setBible: (bible: BibleState) => void;
   setEpisodes: (episodes: Episode[]) => void;
 }
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.1 }
+  }
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 15 },
+  visible: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 24 } }
+};
 
 export const ToolsPanel = memo(function ToolsPanel({ bible, episodes, setBible, setEpisodes }: ToolsPanelProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -58,9 +73,9 @@ export const ToolsPanel = memo(function ToolsPanel({ bible, episodes, setBible, 
     const content = generateExportContent();
     try {
       await navigator.clipboard.writeText(content);
-      alert('선택한 내용이 클립보드에 복사되었습니다.');
+      toast.success('선택한 내용이 클립보드에 복사되었습니다.');
     } catch (err) {
-      alert('클립보드 복사에 실패했습니다.');
+      toast.error('클립보드 복사에 실패했습니다.');
     }
   };
 
@@ -92,16 +107,16 @@ export const ToolsPanel = memo(function ToolsPanel({ bible, episodes, setBible, 
              if (confirm('현재 작성된 데이터가 덮어씌워집니다. 계속하시겠습니까?')) {
                if (parsed.bible) setBible(parsed.bible);
                if (parsed.episodes) setEpisodes(parsed.episodes);
-               alert('성공적으로 복구되었습니다.');
+               toast.success('성공적으로 복구되었습니다.');
              }
           } else {
-             alert('호환되지 않는 백업 파일 형식입니다. (bible 또는 episodes 필드 누락)');
+             toast.error('호환되지 않는 백업 파일 형식입니다. (bible 또는 episodes 필드 누락)');
           }
         } else {
-          alert('올바른 JSON 형식이 아닙니다.');
+          toast.error('올바른 JSON 형식이 아닙니다.');
         }
       } catch (error) {
-        alert('파일을 파싱하는 중 오류가 발생했습니다. 파일이 손상되었을 수 있습니다.');
+        toast.error('파일을 파싱하는 중 오류가 발생했습니다. 파일이 손상되었을 수 있습니다.');
       }
     };
     reader.readAsText(file);
@@ -115,9 +130,9 @@ export const ToolsPanel = memo(function ToolsPanel({ bible, episodes, setBible, 
         logline: '', story: '', world: '', system: '', character: '', villain: '', structure: '', episode: '', item: '', timeline: '', customTabs: []
       });
       setEpisodes([]);
-      alert('데이터가 안전하게 초기화되었습니다.');
+      toast.success('데이터가 안전하게 초기화되었습니다.');
     } else if (confirmText !== null) {
-      alert('입력한 텍스트가 일치하지 않아 취소되었습니다.');
+      toast.info('입력한 텍스트가 일치하지 않아 취소되었습니다.');
     }
   };
 
@@ -138,10 +153,15 @@ export const ToolsPanel = memo(function ToolsPanel({ bible, episodes, setBible, 
         </h1>
       </header>
 
-      <div className="p-6 md:p-8 max-w-4xl mx-auto w-full space-y-6 md:space-y-8">
+      <motion.div 
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+        className="p-6 md:p-8 max-w-4xl mx-auto w-full space-y-6 md:space-y-8"
+      >
         
         {/* 통계 섹션 */}
-        <section className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <motion.section variants={itemVariants} className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
           <div className="p-6 md:p-8">
             <div className="flex items-center gap-3 mb-6">
               <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center border border-indigo-100/50">
@@ -200,10 +220,10 @@ export const ToolsPanel = memo(function ToolsPanel({ bible, episodes, setBible, 
               </div>
             </div>
           </div>
-        </section>
+        </motion.section>
 
         {/* 내보내기 & 백업 섹션 */}
-        <section className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <motion.section variants={itemVariants} className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
           <div className="p-6 md:p-8 border-b border-slate-100">
             <div className="flex items-center gap-3 mb-6">
               <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center border border-amber-100/50">
@@ -295,10 +315,10 @@ export const ToolsPanel = memo(function ToolsPanel({ bible, episodes, setBible, 
               </div>
             </div>
           </div>
-        </section>
+        </motion.section>
 
         {/* 위험 구역 */}
-        <section className="bg-white rounded-2xl border border-red-200 shadow-sm p-6 md:p-8 mb-8 relative overflow-hidden">
+        <motion.section variants={itemVariants} className="bg-white rounded-2xl border border-red-200 shadow-sm p-6 md:p-8 mb-8 relative overflow-hidden hover:shadow-md transition-shadow">
           <div className="absolute top-0 left-0 w-1 h-full bg-red-500"></div>
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
             <div className="flex items-center gap-4">
@@ -315,10 +335,8 @@ export const ToolsPanel = memo(function ToolsPanel({ bible, episodes, setBible, 
               모든 데이터 초기화
             </Button>
           </div>
-        </section>
-
-      </div>
+        </motion.section>
+      </motion.div>
     </div>
   );
 });
-

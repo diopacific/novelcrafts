@@ -4,6 +4,7 @@ import { Button } from './ui/button';
 import { Textarea } from './ui/textarea';
 import { PenTool, CheckCircle2, ListFilter, Trash2, Edit3, Save, X, Plus, ChevronUp, ChevronDown, ChevronRight, FileText, Search, Replace, BookOpen, Sparkles, Copy, Wand2, Maximize2, Minimize2, MoreVertical, LayoutPanelLeft, Loader2, MessageSquare } from 'lucide-react';
 import { useAuth } from '../AuthContext';
+import { toast } from '../lib/toast';
 
 interface WorkspaceProps {
   bible: BibleState;
@@ -77,7 +78,7 @@ export const Workspace = memo(function Workspace({ bible, episodes, setEpisodes 
 
   const handleSave = () => {
     if (!formState.content.trim()) {
-      alert('본문 내용을 입력해주세요.');
+      toast.error('본문 내용을 입력해주세요.');
       return;
     }
 
@@ -161,7 +162,7 @@ export const Workspace = memo(function Workspace({ bible, episodes, setEpisodes 
         direction: ep.direction.split(searchTarget).join(replaceValue),
         summary: ep.summary.split(searchTarget).join(replaceValue),
       })));
-      alert('일괄 치환이 완료되었습니다.');
+      toast.success('일괄 치환이 완료되었습니다.');
       setShowSearchReplace(false);
       setSearchTarget('');
       setReplaceValue('');
@@ -216,7 +217,7 @@ export const Workspace = memo(function Workspace({ bible, episodes, setEpisodes 
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
-    alert('본문이 복사되었습니다.');
+    toast.success('본문이 복사되었습니다.');
   };
 
   const activeEpInfo = episodes.find(e => e.id === activeEpisodeId);
@@ -234,12 +235,12 @@ export const Workspace = memo(function Workspace({ bible, episodes, setEpisodes 
     }
 
     navigator.clipboard.writeText(prompt);
-    alert('AI 프롬프트가 클립보드에 복사되었습니다! 외부 AI 툴(ChatGPT, Claude, Gemini 등)에 붙여넣기 하세요.');
+    toast.success('AI 프롬프트가 클립보드에 복사되었습니다! 외부 AI 툴(ChatGPT, Claude, Gemini 등)에 붙여넣기 하세요.');
   };
 
   const handleAiAutocomplete = async () => {
     if (!formState.content.trim()) {
-      alert("먼저 몇 문장을 작성해주세요.");
+      toast.info("먼저 몇 문장을 작성해주세요.");
       return;
     }
     
@@ -261,11 +262,11 @@ export const Workspace = memo(function Workspace({ bible, episodes, setEpisodes 
       if (response.ok && data.text) {
         setFormState(f => ({ ...f, content: f.content + (f.content.endsWith(' ') || f.content.endsWith('\n') ? '' : ' ') + data.text }));
       } else {
-        alert(data.error || 'AI 생성에 실패했습니다.');
+        toast.error(data.error || 'AI 생성에 실패했습니다.');
       }
     } catch (err) {
       console.error(err);
-      alert('오류가 발생했습니다.');
+      toast.error('오류가 발생했습니다.');
     } finally {
       setIsGenerating(false);
     }
@@ -273,7 +274,7 @@ export const Workspace = memo(function Workspace({ bible, episodes, setEpisodes 
 
   const handleAiFeedback = async () => {
     if (formState.content.length < 100) {
-      alert("피드백을 받으려면 최소 100자 이상 작성해주세요.");
+      toast.info("피드백을 받으려면 최소 100자 이상 작성해주세요.");
       return;
     }
     
@@ -296,11 +297,11 @@ export const Workspace = memo(function Workspace({ bible, episodes, setEpisodes 
       if (response.ok && data.feedback) {
         setAiFeedback(data.feedback);
       } else {
-        alert(data.error || '피드백 생성에 실패했습니다.');
+        toast.error(data.error || '피드백 생성에 실패했습니다.');
       }
     } catch (err) {
       console.error(err);
-      alert('오류가 발생했습니다.');
+      toast.error('오류가 발생했습니다.');
     } finally {
       setIsGenerating(false);
     }

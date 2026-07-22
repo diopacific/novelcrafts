@@ -1,3 +1,4 @@
+import { toast } from "../lib/toast";
 import React, { useState, useEffect } from 'react';
 import { Play, Pause, RotateCcw, Timer, Coffee } from 'lucide-react';
 import { Button } from './ui/button';
@@ -21,7 +22,7 @@ export function PomodoroTimer() {
     } else if (isActive && timeLeft === 0) {
       setIsActive(false);
       // Play a sound or alarm here optionally
-      alert(isWork ? '집중 시간이 끝났습니다! 5분 휴식을 취하세요.' : '휴식이 끝났습니다! 다시 집필을 시작하세요.');
+      toast.info(isWork ? '집중 시간이 끝났습니다! 5분 휴식을 취하세요.' : '휴식이 끝났습니다! 다시 집필을 시작하세요.');
       setIsWork(!isWork);
       setTimeLeft(!isWork ? WORK_TIME : BREAK_TIME);
     }

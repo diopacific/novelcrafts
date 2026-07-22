@@ -1,10 +1,11 @@
 import React, { useState, Suspense, lazy } from 'react';
 import { BibleState, Episode } from './types';
-import { Book, PenTool, Settings, LogIn, LogOut, BookOpen, UserCircle2 } from 'lucide-react';
+import { Book, PenTool, Settings, LogIn, LogOut, BookOpen, UserCircle2, Loader2 } from 'lucide-react';
 import { AuthProvider, useAuth } from './AuthContext';
 import { useDbStorage } from './hooks/useDbStorage';
-
 import { PomodoroTimer } from './components/PomodoroTimer';
+import { ToastContainer } from './components/ui/ToastContainer';
+import { motion, AnimatePresence } from 'motion/react';
 
 // Lazy load major components for code-splitting
 const Home = lazy(() => import('./components/Home').then(module => ({ default: module.Home })));
@@ -136,6 +137,8 @@ function AppContent() {
       
       {/* 1-person dedicated writer tool - Pomodoro Timer globally accessible */}
       {user && currentSection !== 'home' && <PomodoroTimer />}
+      
+      <ToastContainer />
     </div>
   );
 }
@@ -158,7 +161,11 @@ function NavButton({ active, onClick, icon, label }: { active: boolean, onClick:
     >
       {icon} <span className="hidden sm:inline-block">{label}</span>
       {active && (
-        <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600"></div>
+        <motion.div 
+          layoutId="navIndicator" 
+          className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600"
+          transition={{ type: "spring", stiffness: 300, damping: 30 }}
+        />
       )}
     </button>
   );
