@@ -114,6 +114,13 @@ export const Workspace = memo(function Workspace({ bible, episodes, setEpisodes 
     setTimeout(() => setSaveStatus('saved'), 500);
   };
 
+  // Custom event listener for new episode
+  useEffect(() => {
+    const handleNewEpisode = () => setActiveEpisodeId('new');
+    window.addEventListener('createNewEpisode', handleNewEpisode as EventListener);
+    return () => window.removeEventListener('createNewEpisode', handleNewEpisode as EventListener);
+  }, []);
+
   // Keyboard shortcut for saving
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -321,7 +328,7 @@ export const Workspace = memo(function Workspace({ bible, episodes, setEpisodes 
   };
 
   return (
-    <div className="flex-1 flex flex-col w-full h-full bg-[#f8fafc] overflow-hidden">
+    <div className={isFullscreen ? "fixed inset-0 z-[100] flex flex-col w-full h-full bg-[#f8fafc] overflow-hidden" : "flex-1 flex flex-col w-full h-full bg-[#f8fafc] overflow-hidden"}>
       
       {/* Header */}
       {!isFullscreen && (
