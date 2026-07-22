@@ -5,6 +5,7 @@ import { AuthProvider, useAuth } from './AuthContext';
 import { useDbStorage } from './hooks/useDbStorage';
 import { PomodoroTimer } from './components/PomodoroTimer';
 import { ToastContainer } from './components/ui/ToastContainer';
+import { toast } from './lib/toast';
 import { motion, AnimatePresence } from 'motion/react';
 
 // Lazy load major components for code-splitting
@@ -36,7 +37,7 @@ function AppContent() {
           return;
         }
         console.error('Login failed', e);
-        alert(`인증 시스템 연결에 실패했습니다.\n사파리나 모바일 브라우저의 경우 '크로스 사이트 추적 방지(서드파티 쿠키 차단)' 설정이 원인일 수 있습니다.\n\n오류: ${e.message}`);
+        toast.error(`인증 실패: ${e.message}`);
       }
       return;
     }
@@ -103,7 +104,7 @@ function AppContent() {
                   if (e?.code === 'auth/cancelled-popup-request' || e?.code === 'auth/popup-closed-by-user') return;
                   if (e?.code === 'auth/unauthorized-domain') return;
                   if (e?.code === 'auth/popup-blocked' || e?.code === 'auth/popup-closed-by-user' || e?.code === 'auth/web-storage-unsupported' || e?.message?.toLowerCase().includes('popup')) return;
-                  alert(`인증 시스템 연결에 실패했습니다.\n사파리나 모바일 브라우저의 경우 '크로스 사이트 추적 방지(서드파티 쿠키 차단)' 설정이 원인일 수 있습니다.\n\n오류: ${e.message}`);
+                  toast.error(`인증 실패: ${e.message}`);
                 }
               }}
               className="flex items-center bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-1.5 rounded-md transition-colors text-sm font-bold"

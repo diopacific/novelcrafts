@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useMemo, memo } from 'react';
 import { BibleState, Episode } from '../types';
 import { Button } from './ui/button';
 import { Textarea } from './ui/textarea';
+import { motion, AnimatePresence } from "motion/react";
 import { PenTool, CheckCircle2, ListFilter, Trash2, Edit3, Save, X, Plus, ChevronUp, ChevronDown, ChevronRight, FileText, Search, Replace, BookOpen, Sparkles, Copy, Wand2, Maximize2, Minimize2, MoreVertical, LayoutPanelLeft, Loader2, MessageSquare } from 'lucide-react';
 import { useAuth } from '../AuthContext';
 import { toast } from '../lib/toast';
@@ -29,6 +30,7 @@ export const Workspace = memo(function Workspace({ bible, episodes, setEpisodes 
   const [showSearchReplace, setShowSearchReplace] = useState(false);
   const [searchTarget, setSearchTarget] = useState('');
   const [replaceValue, setReplaceValue] = useState('');
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   const nextEpisodeNum = episodes.length + 1;
 
@@ -118,6 +120,17 @@ export const Workspace = memo(function Workspace({ bible, episodes, setEpisodes 
       if ((e.ctrlKey || e.metaKey) && e.key === 's') {
         e.preventDefault();
         handleSave();
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'f' && !e.shiftKey) {
+        e.preventDefault();
+        setShowSearchReplace(prev => {
+          if (!prev) setTimeout(() => searchInputRef.current?.focus(), 100);
+          return !prev;
+        });
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
+        e.preventDefault();
+        setShowQuickBible(prev => !prev);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -413,16 +426,21 @@ export const Workspace = memo(function Workspace({ bible, episodes, setEpisodes 
                 <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center">
                   <FileText className="w-5 h-5 text-slate-300" />
                 </div>
-                <p>작성된 회차가 없습니다.</p>
+                <p>조건에 맞는 회차가 없습니다.</p>
               </div>
             ) : (
-              filteredEpisodes.map((ep) => (
-                <div 
+              <AnimatePresence>
+              {filteredEpisodes.map((ep) => (
+                <motion.div 
+                  layout
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
                   key={ep.id}
                   onClick={() => setActiveEpisodeId(ep.id)}
                   className={`p-4 rounded-2xl cursor-pointer border transition-all text-left group relative ${
                     activeEpisodeId === ep.id 
-                    ? 'border-indigo-200 bg-white shadow-md ring-1 ring-indigo-500/10 scale-[1.02]' 
+                    ? 'border-indigo-200 bg-white shadow-md ring-1 ring-indigo-500/10 scale-[1.02] z-10' 
                     : 'border-slate-200 bg-white hover:border-indigo-300 hover:shadow-sm'
                   }`}
                 >
@@ -461,8 +479,9 @@ export const Workspace = memo(function Workspace({ bible, episodes, setEpisodes 
                       </button>
                     </div>
                   </div>
-                </div>
-              ))
+                </motion.div>
+              ))}
+              </AnimatePresence>
             )}
           </div>
         </div>
@@ -471,20 +490,32 @@ export const Workspace = memo(function Workspace({ bible, episodes, setEpisodes 
         <div className="flex-1 flex flex-col overflow-hidden relative bg-[#f1f5f9]">
           
           {/* Find/Replace Top Banner */}
-          {showSearchReplace && (
-            <div className="bg-white border-b border-slate-200 p-3 shrink-0 flex items-center gap-3 w-full animate-in slide-in-from-top-2 shadow-sm z-20 absolute top-0 left-0 right-0">
-              <Replace className="w-4 h-4 text-indigo-500 hidden sm:block ml-2" />
-              <input type="text" placeholder="찾을 단어" className="h-8 px-3 text-[13px] font-medium rounded-lg bg-slate-50 border border-slate-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 outline-none flex-1 max-w-[200px]" value={searchTarget} onChange={e => setSearchTarget(e.target.value)} />
-              <span className="text-slate-300"><ChevronRight className="w-4 h-4"/></span>
-              <input type="text" placeholder="바꿀 단어" className="h-8 px-3 text-[13px] font-medium rounded-lg bg-slate-50 border border-slate-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 outline-none flex-1 max-w-[200px]" value={replaceValue} onChange={e => setReplaceValue(e.target.value)} />
-              <Button size="sm" onClick={executeGlobalReplace} disabled={!searchTarget} className="bg-indigo-600 text-white hover:bg-indigo-700 h-8 shrink-0 text-[12px] font-bold px-4 rounded-lg">일괄 변경</Button>
-              <div className="flex-1" />
-              <button onClick={() => setShowSearchReplace(false)} className="text-slate-400 hover:text-slate-700 mr-2 bg-slate-100 p-1 rounded-md"><X className="w-4 h-4" /></button>
-            </div>
-          )}
+          <AnimatePresence>
+            {showSearchReplace && (
+              <motion.div 
+                initial={{ y: -60, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                exit={{ y: -60, opacity: 0 }}
+                transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                className="bg-white border-b border-slate-200 p-3 shrink-0 flex items-center gap-3 w-full shadow-sm z-20 absolute top-0 left-0 right-0"
+              >
+                <Replace className="w-4 h-4 text-indigo-500 hidden sm:block ml-2" />
+                <input ref={searchInputRef} type="text" placeholder="찾을 단어" className="h-8 px-3 text-[13px] font-medium rounded-lg bg-slate-50 border border-slate-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 outline-none flex-1 max-w-[200px]" value={searchTarget} onChange={e => setSearchTarget(e.target.value)} />
+                <span className="text-slate-300"><ChevronRight className="w-4 h-4"/></span>
+                <input type="text" placeholder="바꿀 단어" className="h-8 px-3 text-[13px] font-medium rounded-lg bg-slate-50 border border-slate-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 outline-none flex-1 max-w-[200px]" value={replaceValue} onChange={e => setReplaceValue(e.target.value)} />
+                <Button size="sm" onClick={executeGlobalReplace} disabled={!searchTarget} className="bg-indigo-600 text-white hover:bg-indigo-700 h-8 shrink-0 text-[12px] font-bold px-4 rounded-lg">일괄 변경</Button>
+                <div className="flex-1" />
+                <button onClick={() => setShowSearchReplace(false)} className="text-slate-400 hover:text-slate-700 mr-2 bg-slate-100 p-1 rounded-md"><X className="w-4 h-4" /></button>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* Tools Area */}
-          <div className={`border-b border-slate-200 px-6 py-2.5 flex justify-between items-center bg-white shrink-0 z-10 transition-all ${showSearchReplace ? 'mt-[57px]' : ''}`}>
+          <motion.div 
+            animate={{ marginTop: showSearchReplace ? 57 : 0 }}
+            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+            className={`border-b border-slate-200 px-6 py-2.5 flex justify-between items-center bg-white shrink-0 z-10`}
+          >
             <div className="flex items-center gap-3">
                <span className="text-[14px] font-black text-slate-800">
                  {activeEpisodeId === 'new' ? `제 ${nextEpisodeNum}화 기획 및 작성` : `제 ${activeEpInfo?.number}화 편집`}
@@ -528,7 +559,7 @@ export const Workspace = memo(function Workspace({ bible, episodes, setEpisodes 
                 </Button>
               </div>
             </div>
-          </div>
+          </motion.div>
 
           <div className="flex-1 overflow-y-auto w-full custom-scrollbar scroll-smooth">
             <div className={`mx-auto ${isFullscreen ? 'w-full max-w-5xl px-8 py-10' : 'max-w-4xl px-6 py-8'} space-y-6 pb-32 transition-all duration-300`}>
@@ -667,8 +698,15 @@ export const Workspace = memo(function Workspace({ bible, episodes, setEpisodes 
         </div>
 
         {/* Quick Bible Viewer Sidebar */}
+        <AnimatePresence>
         {showQuickBible && (
-          <div className="w-[320px] shrink-0 bg-[#f8fafc] border-l border-slate-200 overflow-y-auto custom-scrollbar flex flex-col items-stretch animate-in slide-in-from-right-4 duration-200 z-20 shadow-2xl absolute right-0 top-0 bottom-0">
+          <motion.div
+            initial={{ x: '100%', opacity: 0.5 }}
+            animate={{ x: 0, opacity: 1 }}
+            exit={{ x: '100%', opacity: 0.5 }}
+            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+            className="w-[320px] shrink-0 bg-[#f8fafc] border-l border-slate-200 overflow-y-auto custom-scrollbar flex flex-col items-stretch z-20 shadow-2xl absolute right-0 top-0 bottom-0"
+          >
             <div className="p-5 border-b border-slate-200 flex items-center justify-between sticky top-0 bg-white/95 backdrop-blur z-10 shadow-sm">
               <h3 className="font-black text-slate-800 flex items-center gap-2">
                 <BookOpen className="w-5 h-5 text-indigo-600" />
@@ -715,8 +753,9 @@ export const Workspace = memo(function Workspace({ bible, episodes, setEpisodes 
                 </div>
               ))}
             </div>
-          </div>
+          </motion.div>
         )}
+        </AnimatePresence>
       </div>
     </div>
   );
