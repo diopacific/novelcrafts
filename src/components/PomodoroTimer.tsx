@@ -1,6 +1,6 @@
 import { toast } from "../lib/toast";
 import React, { useState, useEffect } from 'react';
-import { Play, Pause, RotateCcw, Timer, Coffee } from 'lucide-react';
+import { Play, Pause, RotateCcw, Timer, Coffee, FastForward } from 'lucide-react';
 import { Button } from './ui/button';
 
 export function PomodoroTimer() {
@@ -123,8 +123,11 @@ export function PomodoroTimer() {
                 {isActive ? <Pause className="w-4 h-4 mr-2" /> : <Play className="w-4 h-4 mr-2" />}
                 {isActive ? '일시정지' : '시작'}
               </Button>
-              <Button variant="outline" onClick={resetTimer} className="h-10 px-3 bg-white">
-                <RotateCcw className="w-4 h-4" />
+              <Button variant="outline" onClick={resetTimer} className="h-10 px-3 bg-white" title="초기화">
+                <RotateCcw className="w-4 h-4 text-slate-500" />
+              </Button>
+              <Button variant="outline" onClick={() => switchMode(isWork ? 'break' : 'work')} className="h-10 px-3 bg-white" title="다음으로 건너뛰기">
+                <FastForward className="w-4 h-4 text-slate-500" />
               </Button>
             </div>
           </div>

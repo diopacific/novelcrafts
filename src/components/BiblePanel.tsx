@@ -3,7 +3,7 @@ import { BibleState, CustomBibleTab } from '../types';
 import { Button } from './ui/button';
 import { Textarea } from './ui/textarea';
 import { CharacterGraph } from './CharacterGraph';
-import { Book, Users, Map, Swords, Skull, LayoutTemplate, Save, Cloud, Loader2, Zap, Copy, FilePlus, FileMinus, Lightbulb, CheckCircle2, Plus, Trash2, Edit2, Check, X, Sparkles, Globe, Package, Clock, PanelRightClose, PanelRightOpen } from 'lucide-react';
+import { Book, Users, Map, Swords, Skull, LayoutTemplate, Save, Cloud, Loader2, Zap, Copy, FilePlus, FileMinus, Lightbulb, CheckCircle2, Plus, Trash2, Edit2, Check, X, Sparkles, Globe, Package, Clock, PanelRightClose, PanelRightOpen, Search } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from '../lib/toast';
 
@@ -108,6 +108,8 @@ export const BiblePanel = memo(function BiblePanel({ bible, setBible }: BiblePan
   const [isGenerating, setIsGenerating] = useState(false);
   const [aiIdea, setAiIdea] = useState<string | null>(null);
   const [isOrganizing, setIsOrganizing] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [editorFontSize, setEditorFontSize] = useState(15);
 
   const handleGenerateIdea = async () => {
     setIsGenerating(true);
@@ -337,6 +339,15 @@ export const BiblePanel = memo(function BiblePanel({ bible, setBible }: BiblePan
   }, [baseTabs, bible.customTabs]);
 
 
+  const filteredTabs = useMemo(() => {
+    if (!searchTerm.trim()) return allTabs;
+    const lowerTerm = searchTerm.toLowerCase();
+    return filteredTabs.filter(t => 
+      t.label.toLowerCase().includes(lowerTerm) || 
+      getFieldValue(t.id).toLowerCase().includes(lowerTerm)
+    );
+  }, [allTabs, searchTerm, bible]);
+
   const currentTabInfo = useMemo(() => allTabs.find(t => t.id === activeTab), [allTabs, activeTab]);
 
   const getPlaceholder = (tabId: string) => {
@@ -372,11 +383,30 @@ export const BiblePanel = memo(function BiblePanel({ bible, setBible }: BiblePan
           </Button>
         </div>
 
+        <div className="px-4 py-3 border-b border-slate-200/60 bg-slate-50/50 sticky top-[168px] z-10">
+          <div className="relative">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              placeholder="설정 항목 및 내용 검색..."
+              className="w-full text-[13px] pl-9 pr-4 py-2 rounded-lg border border-slate-200 focus:outline-none focus:border-indigo-300 focus:ring-2 focus:ring-indigo-500/10 bg-white shadow-sm"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+        </div>
         <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4 custom-scrollbar">
+          {filteredTabs.length === 0 && (
+            <div className="flex flex-col items-center justify-center h-40 text-slate-400">
+              <Search className="w-8 h-8 mb-3 text-slate-300" />
+              <p className="text-[13px] font-medium">검색 결과가 없습니다.</p>
+            </div>
+          )}
           {/* 그룹 1: 기본 설정 */}
+          {filteredTabs.filter(t => ['logline', 'story', 'structure'].includes(t.id)).length > 0 && (
           <div className="space-y-1">
             <div className="px-3 pb-2 text-[11px] font-bold tracking-wider text-slate-400">기본 기획</div>
-            {allTabs.filter(t => ['logline', 'story', 'structure'].includes(t.id)).map((tab) => (
+            {filteredTabs.filter(t => ['logline', 'story', 'structure'].includes(t.id)).map((tab) => (
               <div key={tab.id} className="relative group">
                 <button
                   onClick={() => setActiveTab(tab.id)}
@@ -408,11 +438,13 @@ export const BiblePanel = memo(function BiblePanel({ bible, setBible }: BiblePan
               </div>
             ))}
           </div>
+          )}
 
           {/* 그룹 2: 상세 설정 */}
+          {filteredTabs.filter(t => ['world', 'system', 'item', 'character', 'villain'].includes(t.id)).length > 0 && (
           <div className="space-y-1">
             <div className="px-3 pb-2 text-[11px] font-bold tracking-wider text-slate-400 pt-2 border-t border-slate-100">세계관 및 캐릭터</div>
-            {allTabs.filter(t => ['world', 'system', 'item', 'character', 'villain'].includes(t.id)).map((tab) => (
+            {filteredTabs.filter(t => ['world', 'system', 'item', 'character', 'villain'].includes(t.id)).map((tab) => (
               <div key={tab.id} className="relative group">
                 <button
                   onClick={() => setActiveTab(tab.id)}
@@ -444,11 +476,13 @@ export const BiblePanel = memo(function BiblePanel({ bible, setBible }: BiblePan
               </div>
             ))}
           </div>
+          )}
 
           {/* 그룹 3: 에피소드 진행 */}
+          {filteredTabs.filter(t => ['timeline', 'episode'].includes(t.id)).length > 0 && (
           <div className="space-y-1">
             <div className="px-3 pb-2 text-[11px] font-bold tracking-wider text-slate-400 pt-2 border-t border-slate-100">전개 및 타임라인</div>
-            {allTabs.filter(t => ['timeline', 'episode'].includes(t.id)).map((tab) => (
+            {filteredTabs.filter(t => ['timeline', 'episode'].includes(t.id)).map((tab) => (
               <div key={tab.id} className="relative group">
                 <button
                   onClick={() => setActiveTab(tab.id)}
@@ -480,8 +514,10 @@ export const BiblePanel = memo(function BiblePanel({ bible, setBible }: BiblePan
               </div>
             ))}
           </div>
+          )}
 
           {/* 그룹 4: 커스텀 탭 */}
+          {(filteredTabs.filter(t => 'isCustom' in t && t.isCustom).length > 0 || isAddingTab || !searchTerm) && (
           <div className="space-y-1">
             <div className="px-3 pb-2 text-[11px] font-bold tracking-wider text-slate-400 pt-2 border-t border-slate-100 flex items-center justify-between">
               <span>커스텀 항목</span>
@@ -507,7 +543,7 @@ export const BiblePanel = memo(function BiblePanel({ bible, setBible }: BiblePan
               </div>
             )}
 
-            {allTabs.filter(t => 'isCustom' in t && t.isCustom).map((tab) => (
+            {filteredTabs.filter(t => 'isCustom' in t && t.isCustom).map((tab) => (
               <div key={tab.id} className="relative group">
                 <button
                   onClick={() => setActiveTab(tab.id)}
@@ -564,12 +600,13 @@ export const BiblePanel = memo(function BiblePanel({ bible, setBible }: BiblePan
               </div>
             ))}
             
-            {allTabs.filter(t => 'isCustom' in t && t.isCustom).length === 0 && !isAddingTab && (
+            {filteredTabs.filter(t => 'isCustom' in t && t.isCustom).length === 0 && !isAddingTab && (
               <div className="text-center p-4 rounded-xl border border-dashed border-slate-200 text-slate-400 text-[12px] font-medium">
                 우측 상단 '추가' 버튼을 눌러<br/>커스텀 탭을 만들 수 있습니다.
               </div>
             )}
           </div>
+          )}
         </div>
       </div>
 
@@ -664,7 +701,8 @@ export const BiblePanel = memo(function BiblePanel({ bible, setBible }: BiblePan
                         {[1, 2, 3, 4, 5, 6, 7].map(i => <span key={i} className="text-[10px] font-mono">{i}</span>)}
                       </div>
                       <Textarea 
-                        className="w-full h-full text-[15px] leading-[1.8] font-medium bg-white focus-visible:bg-white focus-visible:ring-1 focus-visible:ring-indigo-500/20 border-slate-200 shadow-sm resize-none rounded-2xl py-6 pr-6 pl-16 placeholder:text-slate-300 custom-scrollbar relative z-0"
+                        style={{ fontSize: `${editorFontSize}px` }}
+                        className="w-full h-full leading-[1.8] font-medium bg-white focus-visible:bg-white focus-visible:ring-1 focus-visible:ring-indigo-500/20 border-slate-200 shadow-sm resize-none rounded-2xl py-6 pr-6 pl-16 placeholder:text-slate-300 custom-scrollbar relative z-0"
                         placeholder={"• [주인공] (이름, 외양, 결핍, 성격, 행동 원리, 전투 스펙, 치트 능력)\n• [주요 조력자/동료] (이름, 능력, 주인공과의 관계)\n• [실시간 관계도 시각화]\n텍스트에 'A -> B : 관계' 또는 '이름: A' 형식으로 작성하면 하단에 노드 관계도가 실시간 생성됩니다."}
                         value={getFieldValue(activeTab)}
                         onChange={(e) => updateField(activeTab, e.target.value)}
@@ -692,7 +730,8 @@ export const BiblePanel = memo(function BiblePanel({ bible, setBible }: BiblePan
                       {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13].map(i => <span key={i} className="text-[10px] font-mono">{i}</span>)}
                     </div>
                     <Textarea 
-                      className="w-full h-full min-h-[500px] text-[15px] leading-[1.8] font-medium bg-white focus-visible:bg-white focus-visible:ring-1 focus-visible:ring-indigo-500/20 border-slate-200 shadow-sm resize-none rounded-2xl py-6 pr-6 pl-16 placeholder:text-slate-300 custom-scrollbar relative z-0"
+                      style={{ fontSize: `${editorFontSize}px` }}
+                      className="w-full h-full min-h-[500px] leading-[1.8] font-medium bg-white focus-visible:bg-white focus-visible:ring-1 focus-visible:ring-indigo-500/20 border-slate-200 shadow-sm resize-none rounded-2xl py-6 pr-6 pl-16 placeholder:text-slate-300 custom-scrollbar relative z-0"
                       placeholder={getPlaceholder(activeTab)}
                       value={getFieldValue(activeTab)}
                       onChange={(e) => updateField(activeTab, e.target.value)}

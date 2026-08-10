@@ -24,6 +24,15 @@ export const Workspace = memo(function Workspace({ bible, episodes, setEpisodes 
   const [editorFontSize, setEditorFontSize] = useState(16);
   const [isGenerating, setIsGenerating] = useState(false);
   const [aiFeedback, setAiFeedback] = useState<string | null>(null);
+
+  // AI Correction State
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [selectedText, setSelectedText] = useState("");
+  const [selectionStart, setSelectionStart] = useState(0);
+  const [selectionEnd, setSelectionEnd] = useState(0);
+  const [isCorrecting, setIsCorrecting] = useState(false);
+  const [correctionSuggestions, setCorrectionSuggestions] = useState<string[]>([]);
+  const [showCorrectionUI, setShowCorrectionUI] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'unsaved'>('saved');
 
   // Search & Replace State
@@ -113,6 +122,16 @@ export const Workspace = memo(function Workspace({ bible, episodes, setEpisodes 
     
     setTimeout(() => setSaveStatus('saved'), 500);
   };
+
+  // Scroll to active episode
+  useEffect(() => {
+    if (activeEpisodeId && activeEpisodeId !== 'new') {
+      const el = document.getElementById(`ep-${activeEpisodeId}`);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }
+  }, [activeEpisodeId]);
 
   // Custom event listener for new episode
   useEffect(() => {
@@ -256,6 +275,76 @@ export const Workspace = memo(function Workspace({ bible, episodes, setEpisodes 
 
     navigator.clipboard.writeText(prompt);
     toast.success('AI 프롬프트가 클립보드에 복사되었습니다! 외부 AI 툴(ChatGPT, Claude, Gemini 등)에 붙여넣기 하세요.');
+  };
+
+  const handleSelectionChange = () => {
+    if (textareaRef.current) {
+      const start = textareaRef.current.selectionStart;
+      const end = textareaRef.current.selectionEnd;
+      if (start !== end) {
+        setSelectionStart(start);
+        setSelectionEnd(end);
+        setSelectedText(formState.content.substring(start, end));
+      } else {
+        setSelectedText("");
+        setShowCorrectionUI(false);
+      }
+    }
+  };
+
+  const handleAiCorrection = async () => {
+    if (!selectedText.trim()) return;
+    
+    setIsCorrecting(true);
+    setShowCorrectionUI(true);
+    setCorrectionSuggestions([]);
+    
+    try {
+      const baseBible = `핵심/로그라인: ${bible.logline}\n스토리: ${bible.story}\n세계관: ${bible.world}\n캐릭터: ${bible.character}`;
+      const beforeText = formState.content.substring(Math.max(0, selectionStart - 500), selectionStart);
+      const afterText = formState.content.substring(selectionEnd, Math.min(formState.content.length, selectionEnd + 500));
+      const context = `[이전 문맥]\n${beforeText}\n\n[이후 문맥]\n${afterText}\n\n[설정 참고]\n${baseBible}`;
+      
+      const response = await fetch('/api/ai/correct', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          text: selectedText,
+          context: context
+        })
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok && data.suggestions) {
+        setCorrectionSuggestions(data.suggestions);
+      } else {
+        toast.error(data.error || '교정 제안 생성에 실패했습니다.');
+        setShowCorrectionUI(false);
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error('통신 오류가 발생했습니다.');
+      setShowCorrectionUI(false);
+    } finally {
+      setIsCorrecting(false);
+    }
+  };
+
+  const applyCorrection = (suggestion: string) => {
+    const newContent = formState.content.substring(0, selectionStart) + suggestion + formState.content.substring(selectionEnd);
+    setFormState(prev => ({ ...prev, content: newContent }));
+    setSelectedText("");
+    setShowCorrectionUI(false);
+    toast.success('문장이 교정되었습니다.');
+    
+    // Reset selection in textarea
+    setTimeout(() => {
+      if (textareaRef.current) {
+        textareaRef.current.focus();
+        textareaRef.current.setSelectionRange(selectionStart, selectionStart + suggestion.length);
+      }
+    }, 50);
   };
 
   const handleAiAutocomplete = async () => {
@@ -439,6 +528,7 @@ export const Workspace = memo(function Workspace({ bible, episodes, setEpisodes 
               <AnimatePresence>
               {filteredEpisodes.map((ep) => (
                 <motion.div 
+                  id={`ep-${ep.id}`}
                   layout
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -466,10 +556,19 @@ export const Workspace = memo(function Workspace({ bible, episodes, setEpisodes 
                     </div>
                   </div>
                   <h4 className="text-[13px] font-bold text-slate-600 truncate mb-2">{ep.direction || '제목 미정'}</h4>
-                  <div className="flex items-center justify-between">
-                    <p className="text-[11px] text-slate-400 font-mono font-medium flex items-center bg-slate-50 px-2 py-0.5 rounded-md w-fit">
-                      {ep.content.length.toLocaleString()} 자
-                    </p>
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center justify-between">
+                      <p className="text-[11px] text-slate-400 font-mono font-medium flex items-center bg-slate-50 px-2 py-0.5 rounded-md w-fit">
+                        {ep.content.length.toLocaleString()} 자
+                      </p>
+                    </div>
+                    <div className="w-full h-1 bg-slate-100 rounded-full overflow-hidden">
+                      <div 
+                        className={`h-full transition-all duration-500 ${ep.content.length >= 5500 ? 'bg-emerald-400' : 'bg-indigo-400'}`} 
+                        style={{ width: `${Math.min(100, (ep.content.length / 5500) * 100)}%` }} 
+                      />
+                    </div>
+                  </div>
                     
                     {/* Hover Actions */}
                     <div className="flex items-center bg-white shadow-sm border border-slate-100 rounded-md opacity-0 group-hover:opacity-100 transition-opacity absolute right-3 bottom-3">
@@ -485,7 +584,6 @@ export const Workspace = memo(function Workspace({ bible, episodes, setEpisodes 
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     </div>
-                  </div>
                 </motion.div>
               ))}
               </AnimatePresence>
@@ -606,6 +704,7 @@ export const Workspace = memo(function Workspace({ bible, episodes, setEpisodes 
                     <span className="text-[11px] text-slate-400 font-medium">연재 권장 분량: 5,500자</span>
                   </div>
                   <div className="flex items-center gap-3">
+
                     <div className="flex items-center gap-1.5 w-32 hidden sm:flex" title="목표 글자수 (5500자)">
                       <div className="flex-1 h-1.5 bg-slate-200/60 rounded-full overflow-hidden">
                         <div 
@@ -629,13 +728,122 @@ export const Workspace = memo(function Workspace({ bible, episodes, setEpisodes 
                   </div>
                   
                   <Textarea 
-                    className={`${isFullscreen ? 'min-h-[calc(100vh-240px)] h-[calc(100vh-240px)]' : 'min-h-[600px] h-[600px]'} w-full bg-white border border-slate-200 focus:border-indigo-300 focus:ring-4 focus:ring-indigo-500/10 font-medium leading-[2.2] text-slate-800 shadow-md resize-y transition-all rounded-2xl py-6 pr-8 pl-6 sm:pl-16 placeholder:text-slate-300 custom-scrollbar relative z-0`}
+                    ref={textareaRef}
+                    className={`${isFullscreen ? 'min-h-[calc(100vh-180px)] h-[calc(100vh-180px)] p-10 sm:pl-20' : 'min-h-[600px] h-[600px] py-6 pr-8 pl-6 sm:pl-16'} w-full bg-white border border-slate-200 focus:border-indigo-300 focus:ring-4 focus:ring-indigo-500/10 font-medium leading-[2.2] text-slate-800 shadow-md resize-y transition-all rounded-2xl placeholder:text-slate-300 custom-scrollbar relative z-0`}
                     style={{ fontSize: `${editorFontSize}px`, wordBreak: 'keep-all' }}
                     value={formState.content}
                     onChange={(e) => handleContentChange('content', e.target.value)}
+                    onSelect={handleSelectionChange}
+                    onMouseUp={handleSelectionChange}
+                    onKeyUp={handleSelectionChange}
                     placeholder="독자를 사로잡을 첫 문장을 입력하세요..."
                   />
                   
+                  {/* Floating AI Grammar Fix Button */}
+                  <AnimatePresence>
+                    {selectedText.length > 0 && selectedText.trim().length > 0 && !showCorrectionUI && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                        className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20"
+                      >
+                        <Button
+                          onClick={handleAiCorrection}
+                          disabled={isCorrecting}
+                          className="h-11 bg-slate-900 hover:bg-slate-800 text-white shadow-xl shadow-indigo-500/10 rounded-full font-bold text-[13px] px-6 border border-slate-700 transition-all hover:scale-105 group"
+                        >
+                          {isCorrecting ? (
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin text-indigo-400" />
+                          ) : (
+                            <Sparkles className="w-4 h-4 mr-2 text-indigo-400 group-hover:text-indigo-300 transition-colors" />
+                          )}
+                          {isCorrecting ? '문장 다듬는 중...' : 'AI 문장 다듬기'}
+                        </Button>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
+                  {/* Floating Save Status (Fullscreen Only) */}
+                  <AnimatePresence>
+                    {isFullscreen && (
+                      <motion.div 
+                        initial={{ opacity: 0, y: -20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -20 }}
+                        className="absolute top-6 right-8 bg-white/80 backdrop-blur-md border border-slate-200 shadow-sm rounded-full px-4 py-2 flex items-center gap-2 z-20 pointer-events-none"
+                      >
+                        {saveStatus === 'saving' ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin text-slate-400" />
+                            <span className="text-[12px] font-bold text-slate-500">자동 저장 중...</span>
+                          </>
+                        ) : saveStatus === 'saved' ? (
+                          <>
+                            <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                            <span className="text-[12px] font-bold text-emerald-600">저장 완료</span>
+                          </>
+                        ) : (
+                          <>
+                            <Save className="w-4 h-4 text-slate-300" />
+                            <span className="text-[12px] font-bold text-slate-400">변경사항 없음</span>
+                          </>
+                        )}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
+                  {/* AI Sentence Correction UI / Toast Tooltip */}
+                  <AnimatePresence>
+                    {showCorrectionUI && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                        className="absolute bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-2xl bg-white border border-slate-200 rounded-2xl shadow-[0_15px_40px_-10px_rgba(0,0,0,0.15)] z-30 overflow-hidden flex flex-col max-h-[350px]"
+                      >
+                        <div className="px-5 py-3.5 border-b border-slate-100 bg-slate-50 flex items-center justify-between shrink-0">
+                          <h3 className="font-bold text-[13px] text-slate-700 flex items-center gap-2">
+                            <Sparkles className="w-4 h-4 text-indigo-500" />
+                            AI 추천 교정안
+                          </h3>
+                          <button onClick={() => setShowCorrectionUI(false)} className="text-slate-400 hover:text-slate-600 p-1 bg-white rounded-full shadow-sm">
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                        <div className="p-4 overflow-y-auto custom-scrollbar flex-1 bg-white">
+                          {isCorrecting ? (
+                            <div className="flex flex-col items-center justify-center py-8 text-slate-400">
+                              <Loader2 className="w-6 h-6 animate-spin mb-3 text-indigo-400" />
+                              <span className="text-[13px] font-medium">더 자연스러운 문장을 고민하고 있습니다...</span>
+                            </div>
+                          ) : correctionSuggestions.length > 0 ? (
+                            <div className="space-y-3">
+                              {correctionSuggestions.map((suggestion, idx) => (
+                                <button
+                                  key={idx}
+                                  onClick={() => applyCorrection(suggestion)}
+                                  className="w-full text-left p-4 rounded-xl border border-slate-100 hover:border-indigo-300 hover:bg-indigo-50/50 transition-all group flex items-start gap-3 hover:shadow-sm"
+                                >
+                                  <div className="w-6 h-6 rounded-full bg-slate-50 text-slate-500 font-bold text-[11px] flex items-center justify-center shrink-0 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
+                                    {idx + 1}
+                                  </div>
+                                  <div className="text-[14px] font-medium text-slate-700 leading-[1.7] group-hover:text-indigo-950 flex-1">
+                                    {suggestion}
+                                  </div>
+                                </button>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="text-center py-6 text-slate-500 text-[13px]">
+                              제안을 불러오지 못했습니다.
+                            </div>
+                          )}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
                   {/* Floating AI Tools Toolbar (Appears on focus/hover in a real app, placed statically here) */}
                   <div className="absolute bottom-6 right-8 flex flex-col gap-2 opacity-30 group-hover:opacity-100 transition-opacity z-20">
                      <Button 
