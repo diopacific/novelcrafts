@@ -53,7 +53,7 @@ ${instruction || "자연스럽게 다음 내용을 3~4문장으로 이어 써주
 
   app.post("/api/ai/correct", async (req, res) => {
     try {
-      const { text, context, mode, instruction } = req.body;
+      const { text, context } = req.body;
       const apiKey = process.env.GEMINI_API_KEY;
       
       if (!apiKey) {
@@ -62,27 +62,13 @@ ${instruction || "자연스럽게 다음 내용을 3~4문장으로 이어 써주
 
       const ai = new GoogleGenAI({ apiKey });
       
-      let styleGuidance = "웹소설 특유의 리듬감, 몰입감, 가독성을 살려 더 자연스럽게 다듬어주세요.";
-      if (mode === 'tension') {
-        styleGuidance = "긴장감과 박진감을 극대화하고 사이다 같은 쾌감과 속도감을 주도록 문장을 날카롭게 다듬어주세요.";
-      } else if (mode === 'sensory') {
-        styleGuidance = "시각, 청각 등 감각적 묘사와 비유를 생생하게 추가하여 독자의 뇌리에 그림이 그려지도록 다듬어주세요.";
-      } else if (mode === 'dialogue') {
-        styleGuidance = "캐릭터의 개성과 감정이 생생하게 살아있는 쫀득하고 자연스러운 대사/말투로 다듬어주세요.";
-      } else if (instruction) {
-        styleGuidance = instruction;
-      }
-
-      const prompt = `당신은 탁월한 웹소설 문장 윤문 및 코파일럿 AI입니다. 
-다음 선택된 문장을 작가의 의도에 맞게 3가지 버전으로 다듬어 제안해주세요.
-
-[윤문 지침]
-${styleGuidance}
+      const prompt = `당신은 탁월한 웹소설 문장 교정 AI입니다. 
+다음 어색하거나 매끄럽지 않은 문장을 웹소설 특유의 리듬감, 몰입감, 가독성을 살려 더 자연스럽게 3가지 버전으로 다듬어 제안해주세요.
 
 [전후 문맥 요약]
-${context || '문맥 없음'}
+${context}
 
-[원문 문장]
+[교정할 문장]
 ${text}
 
 ---
@@ -225,72 +211,6 @@ ${text}
       res.json(parsed);
     } catch (error: any) {
       console.error('AI Bible Organize Error:', error);
-      res.status(500).json({ error: error.message });
-    }
-  });
-
-  app.post("/api/ai/bible-audit", async (req, res) => {
-    try {
-      const { bible } = req.body;
-      const apiKey = process.env.GEMINI_API_KEY;
-      
-      if (!apiKey) {
-        return res.status(500).json({ error: "Gemini API key is not configured on the server." });
-      }
-
-      const ai = new GoogleGenAI({ apiKey });
-
-      const bibleSummary = `
-[로그라인]: ${bible.logline || '미작성'}
-[스토리 플롯]: ${bible.story || '미작성'}
-[세계관]: ${bible.world || '미작성'}
-[능력 및 시스템]: ${bible.system || '미작성'}
-[캐릭터]: ${bible.character || '미작성'}
-[빌런/적대세력]: ${bible.villain || '미작성'}
-[아이템]: ${bible.item || '미작성'}
-[타임라인]: ${bible.timeline || '미작성'}
-[집필지침]: ${bible.structure || '미작성'}
-      `;
-
-      const prompt = `당신은 대한민국 정상급 웹소설 메인 CP(기획총괄 책임편집자)입니다.
-작가의 설정집 전체를 냉철하면서도 실무적으로 분석하여, 연재 시 발생할 수 있는 [설정 구멍/모순]과 [파워 인플레 위험], 그리고 [상업적 흥행 포인트]를 분석해주세요.
-
-[설정집 내용]
-${bibleSummary}
-
----
-응답 형식:
-반드시 다음 JSON 규격으로만 응답하세요. (마크다운 백틱 없이 순수 JSON만 반환)
-{
-  "commercialScore": 85,
-  "summary": "작품 전체 기획에 대한 총평 (2~3문장)",
-  "strengths": [
-    "핵심 강점 1",
-    "핵심 강점 2"
-  ],
-  "plotHoles": [
-    "잠재적 설정 충돌 또는 개연성 결핍 포인트 1",
-    "잠재적 설정 충돌 또는 개연성 결핍 포인트 2"
-  ],
-  "balanceWarning": "파워 밸런스 및 능력치 인플레이션 관련 주의사항 조언",
-  "recommendations": [
-    "연재 성공을 위한 실전 개선 제안 1",
-    "연재 성공을 위한 실전 개선 제안 2"
-  ]
-}`;
-
-      const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
-        contents: prompt,
-      });
-
-      let responseText = response.text || "{}";
-      responseText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
-      
-      const parsed = JSON.parse(responseText);
-      res.json(parsed);
-    } catch (error: any) {
-      console.error('AI Bible Audit Error:', error);
       res.status(500).json({ error: error.message });
     }
   });

@@ -1,20 +1,23 @@
 import fs from 'fs';
 let code = fs.readFileSync('src/components/Home.tsx', 'utf-8');
 
-// Add import for ThreeBackground
-code = code.replace("import { motion } from 'motion/react';", "import { motion } from 'motion/react';\nimport { ThreeBackground } from './ThreeBackground';");
+// Add Plus to lucide imports
+code = code.replace("import { Book, PenTool", "import { Book, PenTool, Plus");
 
-// Replace the subtle background decoration with ThreeBackground + existing blurred circles (maybe they still look good together, or we replace them)
-const bgTarget = `      {/* Subtle background decoration */}
-      <div className="absolute top-[-150px] left-[-100px] w-[600px] h-[600px] bg-indigo-500/10 rounded-full blur-[100px] pointer-events-none"></div>
-      <div className="absolute bottom-[-150px] right-[-100px] w-[600px] h-[600px] bg-blue-500/10 rounded-full blur-[100px] pointer-events-none"></div>`;
-
-const bgReplace = `      {/* 3D Background Decoration */}
-      <ThreeBackground />
-      {/* Subtle background decoration fallback / accent */}
-      <div className="absolute top-[-150px] left-[-100px] w-[600px] h-[600px] bg-indigo-500/10 rounded-full blur-[100px] pointer-events-none"></div>
-      <div className="absolute bottom-[-150px] right-[-100px] w-[600px] h-[600px] bg-blue-500/10 rounded-full blur-[100px] pointer-events-none"></div>`;
-
-code = code.replace(bgTarget, bgReplace);
+// Replace recent episodes header
+const targetHeader = `              <button onClick={() => onNavigate('workspace')} className="text-[15px] font-bold text-indigo-600 hover:text-indigo-700 flex items-center px-4 py-2 rounded-xl hover:bg-indigo-50 transition-colors">
+                전체 보기 <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>`;
+const replaceHeader = `              <div className="flex items-center gap-2">
+                <button onClick={() => { onNavigate('workspace'); setTimeout(() => window.dispatchEvent(new CustomEvent('createNewEpisode')), 100); }} className="text-[14px] font-bold text-white bg-indigo-600 hover:bg-indigo-700 shadow-sm flex items-center px-4 py-2.5 rounded-xl transition-all hover:-translate-y-0.5">
+                  <Plus className="w-4 h-4 mr-1.5" /> 새 회차 쓰기
+                </button>
+                <button onClick={() => onNavigate('workspace')} className="text-[14px] font-bold text-slate-600 hover:text-indigo-600 flex items-center px-4 py-2.5 rounded-xl hover:bg-slate-50 transition-colors">
+                  전체 보기 <ChevronRight className="w-4 h-4 ml-1" />
+                </button>
+              </div>
+            </div>`;
+code = code.replace(targetHeader, replaceHeader);
 
 fs.writeFileSync('src/components/Home.tsx', code);

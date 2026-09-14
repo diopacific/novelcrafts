@@ -15,10 +15,7 @@ export function useDbStorage() {
     character: '',
     villain: '',
     structure: '',
-    episode: '',
-    item: '',
-    timeline: '',
-    customTabs: []
+    episode: ''
   });
   
   const [episodes, setEpisodesRaw] = useState<Episode[]>([]);
