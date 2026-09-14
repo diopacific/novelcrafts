@@ -26,4 +26,5 @@ export interface Episode {
   summary: string;
   authorNote?: string;
   status?: 'draft' | 'revision' | 'completed';
+  createdAt?: string;
 }

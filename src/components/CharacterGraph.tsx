@@ -107,15 +107,16 @@ export function CharacterGraph({ text }: CharacterGraphProps) {
       .attr('orient', 'auto')
       .append('path')
       .attr('d', 'M0,-5L10,0L0,5')
-      .attr('fill', '#94a3b8');
+      .attr('fill', '#f59e0b');
 
     // Lines
     const link = svg.append('g')
       .selectAll('line')
       .data(graphLinks)
       .enter().append('line')
-      .attr('stroke', '#cbd5e1')
-      .attr('stroke-width', 2)
+      .attr('stroke', '#475569')
+      .attr('stroke-width', 1.5)
+      .attr('stroke-dasharray', '4,2')
       .attr('marker-end', 'url(#end)');
 
     // Link labels background
@@ -123,7 +124,8 @@ export function CharacterGraph({ text }: CharacterGraphProps) {
       .selectAll('rect')
       .data(graphLinks)
       .enter().append('rect')
-      .attr('fill', 'rgba(255,255,255,0.8)')
+      .attr('fill', 'rgba(10, 13, 28, 0.85)')
+      .attr('stroke', 'rgba(255, 255, 255, 0.1)')
       .attr('rx', 4)
       .attr('ry', 4);
 
@@ -132,7 +134,7 @@ export function CharacterGraph({ text }: CharacterGraphProps) {
       .selectAll('text')
       .data(graphLinks)
       .enter().append('text')
-      .attr('fill', '#64748b')
+      .attr('fill', '#cbd5e1')
       .attr('font-size', '11px')
       .attr('font-weight', '600')
       .attr('text-anchor', 'middle')
@@ -152,18 +154,18 @@ export function CharacterGraph({ text }: CharacterGraphProps) {
     // Node circles
     node.append('circle')
       .attr('r', 24)
-      .attr('fill', d => d.group === 0 ? '#f8fafc' : d.group === 1 ? '#e0e7ff' : '#ffe4e6')
-      .attr('stroke', d => d.group === 0 ? '#e2e8f0' : d.group === 1 ? '#818cf8' : '#fb7185')
-      .attr('stroke-width', 2.5)
+      .attr('fill', d => d.group === 0 ? '#1e293b' : d.group === 1 ? '#1e1b4b' : '#3b0764')
+      .attr('stroke', d => d.group === 0 ? '#f59e0b' : d.group === 1 ? '#818cf8' : '#e879f9')
+      .attr('stroke-width', 2)
       .style('filter', 'url(#drop-shadow)');
 
     // Node texts
     node.append('text')
       .attr('dy', 4)
-      .attr('font-size', '13px')
+      .attr('font-size', '12px')
       .attr('font-weight', '700')
       .attr('text-anchor', 'middle')
-      .attr('fill', '#334155')
+      .attr('fill', '#f8fafc')
       .text(d => d.label);
 
     simulation.on('tick', () => {
